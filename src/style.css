@@ -1,1 +1,104 @@
 @import "tailwindcss";
+
+body {
+    width: 100%;
+    color: azure;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+h1 {
+    margin-bottom: 30px;
+}
+
+header {
+    display: flex;
+    font-size: larger;
+}
+
+.right {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    flex: 1;
+}
+
+.switch {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;   
+    align-items: stretch;
+}
+
+.drop-zone {
+    box-sizing: border-box;
+    height: 200px;
+    border: 1.5px solid black;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    font-family: Arial, sans-serif;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background-color: #f8f9fa;
+    flex: 1;
+}
+
+.drop-zone:hover {
+    background-color: #e9ecef;
+    border-color: #357abd;
+}
+
+.drop-zone.dragover {
+    background-color: #e3f2fd;
+    border-color: #2196f3;
+}
+
+.drop-zone i {
+    font-size: 48px;
+    /* color: #3c7cc6; */
+    margin-bottom: 10px;
+}
+
+.drop-zone p {
+    margin: 0;
+    color: #666;
+}
+
+#fileInput {
+    display: none;
+}
+
+.file-info {
+    text-align: center;
+    margin-top: 10px;
+    color: #666;
+}
+
+button {
+    background: #f8f9fa;
+    color: black;
+    font-weight: 500;
+    border: 1px solid black;
+    padding: 13px;
+    border-radius: 10px;
+    cursor: pointer;
+    flex: 1;
+}
+
+button:hover {
+    background: #e5e5e6;
+}
+
+input {    
+    background: #f8f9fa;
+    color: black;
+    font-weight: 500;
+    border: 1px solid black;
+}

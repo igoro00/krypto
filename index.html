@@ -4,12 +4,33 @@
 		<meta charset="UTF-8" />
 		<link rel="icon" type="image/svg+xml" href="/vite.svg" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
 		<title>Kryptografia</title>
 	</head>
-	<body class="bg-gray-900 flex flex-col items-center h-screen">
-		<h1 class="text-7xl text-gray-400 text-center p-8 font-bold font-serif">
+	<body class="bg-gray-900">
+		<h1 class="text-7xl text-amber-200 text-center p-8 font-bold">
 			Kryptografia
 		</h1>
 		<script type="module" src="/src/main.ts"></script>
+		<header class="flex-col lg:flex-row">
+			<div class="drop-zone" onclick="document.getElementById('fileInput').click()">
+				<i class="fas fa-cloud-upload-alt upload-icon text-gray-900"></i>
+				<p>Przeciągnij plik lub kliknij aby wybrać</p>
+				<input id="fileInput" type="file"/>
+				<div class="file-info"></div>
+			</div>
+
+			<div class="right">
+				<div class="switch">
+					<button id="encrypt">Szyfruj</button>
+					<button id="decrypt">Deszyfruj</button>
+					<button id="key-button">Generuj klucz (NIEBEZPIECZNE)</button>
+					<input type="text" minlength="128">
+				</div>
+				<p id="key">
+					KUKU
+				</p>
+			</div>
+		</header>
 	</body>
 </html>
