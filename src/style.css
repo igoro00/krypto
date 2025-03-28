@@ -32,6 +32,11 @@ header {
     flex-direction: column;
     gap: 10px;   
     align-items: stretch;
+    min-width: 40vw;
+}
+
+.switch input {
+    text-align: center;
 }
 
 .drop-zone {
@@ -110,7 +115,6 @@ main {
 .text {
     flex: 1;
     box-sizing: border-box;
-    height: 20vh;
 }
 
 p {
@@ -123,13 +127,19 @@ p {
     width: 100%;
 }
 
-.nothing {
+.formGroup {
+    padding-left: 30px;
     flex: 1;
+    text-align: left;
+}
+
+.formGroup p {
+    text-align: left;
 }
 
 #keyHolder {
     color: red;
-    text-align: center;
+    text-align: left;
 }
 
 label {

@@ -8,7 +8,7 @@
 		<title>Kryptografia</title>
 	</head>
 	<body class="bg-gray-900">
-		<h1 class="text-7xl text-amber-200 text-center p-8 font-bold">
+		<h1 class="text-4xl text-amber-200 text-center p-8 font-bold">
 			Kryptografia
 		</h1>
 		<script type="module" src="/src/main.ts"></script>
@@ -24,21 +24,41 @@
 				<div class="switch">
 					<button id="encrypt">Szyfruj</button>
 					<button id="decrypt">Deszyfruj</button>
-					<button id="key-button">Generuj klucz (NIEBEZPIECZNE)</button>
-					<div id="keyHolder"> Wygenerowany klucz: <span id="key">KUKU</span></div>
+
+					<button id="generate-key">Generuj klucz</button>
+					<div id="keyHolder"> Wygenerowany klucz: <span id="key">brak klucza</span></div>
 					<hr>
 					<label for="text">Wprowadź własny klucz poniżej</label>
-					<input type="text" minlength="128" >
+					<input type="text" id="manualKey" minlength="128" maxlength="256" value="">
+					<i><b>Uwaga!</b> Wprowadzony ręcznie klucz ma pierwszeństwo!</i>
 				</div>
 			</div>
 		</header>
+		<br>
+		<hr>
+		<br>
 		<main>
 			<div class="text">
 				<p>Wprowadź tekst do zaszyfrowania/deszyfrowania</p>
 				<input type="text">
 			</div>
-			<div class="nothing">
-
+			<div class="formGroup">
+				<p>Wybierz długość klucza:</p>
+		
+				<div class="radio-option">
+					<input type="radio" id="key128" name="keyLength" value="128" checked>
+					<label for="key128">128 bitów</label>
+				</div>
+		
+				<div class="radio-option">
+					<input type="radio" id="key192" name="keyLength" value="192">
+					<label for="key192">192 bity</label>
+				</div>
+		
+				<div class="radio-option">
+					<input type="radio" id="key256" name="keyLength" value="256">
+					<label for="key256">256 bitów</label>
+				</div>
 			</div>
 		</main>
 	</body>
