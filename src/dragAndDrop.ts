@@ -41,16 +41,11 @@ export function dragAndDrop () {
         const dt = e.dataTransfer;
         if (dt?.files && dt.files[0]) {
             const file = dt.files[0];
-            // Symuluj zmianę input file
             const dataTransfer = new DataTransfer();
             dataTransfer.items.add(file);
             input.files = dataTransfer.files;
             
-            // Wywołaj istniejący event handler
             input.dispatchEvent(new Event('change'));
-            
-            // Aktualizuj info o pliku
-            // fileInfo.textContent = `Wybrany plik: ${file.name} (${formatFileSize(file.size)})`;
         }
     });
 
@@ -58,7 +53,6 @@ export function dragAndDrop () {
         const file = (e.target as HTMLInputElement).files?.[0];
         if (!file) return;
         
-        // Aktualizuj info o pliku
         if (fileInfo) {
             fileInfo.textContent = `Wybrany plik: ${file.name} (${formatFileSize(file.size)})`;
         }

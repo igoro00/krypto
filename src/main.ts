@@ -1,5 +1,7 @@
 import { dragAndDrop } from './dragAndDrop'
 import { bytesToHex, generateKey } from './generateKey';
+import { KeyExpansion } from './KeyExpansion';
+import { encrypt, decrypt } from './aes';
 import './style.css'
 
 dragAndDrop()
