@@ -25,12 +25,21 @@
 					<button id="encrypt">Szyfruj</button>
 					<button id="decrypt">Deszyfruj</button>
 					<button id="key-button">Generuj klucz (NIEBEZPIECZNE)</button>
-					<input type="text" minlength="128">
+					<div id="keyHolder"> Wygenerowany klucz: <span id="key">KUKU</span></div>
+					<hr>
+					<label for="text">Wprowadź własny klucz poniżej</label>
+					<input type="text" minlength="128" >
 				</div>
-				<p id="key">
-					KUKU
-				</p>
 			</div>
 		</header>
+		<main>
+			<div class="text">
+				<p>Wprowadź tekst do zaszyfrowania/deszyfrowania</p>
+				<input type="text">
+			</div>
+			<div class="nothing">
+
+			</div>
+		</main>
 	</body>
 </html>

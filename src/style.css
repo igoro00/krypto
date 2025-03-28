@@ -102,3 +102,36 @@ input {
     font-weight: 500;
     border: 1px solid black;
 }
+
+main {
+    display: flex;
+}
+
+.text {
+    flex: 1;
+    box-sizing: border-box;
+    height: 20vh;
+}
+
+p {
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.text input {
+    height: 100%;
+    width: 100%;
+}
+
+.nothing {
+    flex: 1;
+}
+
+#keyHolder {
+    color: red;
+    text-align: center;
+}
+
+label {
+    text-align: center;
+}
