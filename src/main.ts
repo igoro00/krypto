@@ -8,18 +8,22 @@ dragAndDrop();
 document.addEventListener('DOMContentLoaded', () => {
     console.log("Site Loaded");
     
+    // Pobieranie elementów DOM
     const action = document.getElementById('action');
     const generatedKeyButton = document.getElementById('generate-key');
     const generatedKey = document.getElementById('key');
     const manualKey = document.getElementById('manualKey') as HTMLInputElement;
-    const textInput = document.getElementById('textInput') as HTMLInputElement;
+    const textInput = document.getElementById('textInput') as HTMLTextAreaElement;
     const fileInput = document.getElementById('fileInput') as HTMLInputElement;
+    const resultDiv = document.createElement('div');
+    resultDiv.id = 'result';
+    document.body.appendChild(resultDiv);
 
     // Elementy do ukrywania/pokazywania
     const dropZone = document.querySelector('.drop-zone');
     const textInputContainer = document.querySelector('.text');
 
-    // Funkcja aktualizująca widoczność elementów na podstawie wybranego typu danych
+    // Funkcja aktualizująca widoczność elementów
     function updateVisibility() {
         const dataType = document.querySelector<HTMLInputElement>('input[name="dataType"]:checked');
 
@@ -42,14 +46,30 @@ document.addEventListener('DOMContentLoaded', () => {
     // Inicjalna aktualizacja widoczności
     updateVisibility();
 
+    // Funkcja do odczytu pliku
+    function readFile(file: File): Promise<string> {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+                if (typeof reader.result === 'string') {
+                    resolve(reader.result);
+                } else {
+                    reject(new Error('Failed to read file as text'));
+                }
+            };
+            reader.onerror = () => reject(reader.error);
+            reader.readAsText(file);
+        });
+    }
+
     // Obsługa generowania klucza
     if (!generatedKeyButton || !generatedKey || !manualKey || !textInput || !fileInput) {
         console.error("Nie znaleziono wszystkich wymaganych elementów DOM");
         return;
     }
 
-    generatedKeyButton?.addEventListener('click', () => {
-        console.log("Generating key...")
+    generatedKeyButton.addEventListener('click', () => {
+        console.log("Generating key...");
         const selectedRadio = document.querySelector<HTMLInputElement>('input[name="keyLength"]:checked');
         if (selectedRadio) {
             const keyLength = parseInt(selectedRadio.value);
@@ -59,37 +79,76 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    action?.addEventListener('click', () => {
+    action?.addEventListener('click', async () => {
         const selectedRadioAction = document.querySelector<HTMLInputElement>('input[name="operation"]:checked');
         const dataType = document.querySelector<HTMLInputElement>('input[name="dataType"]:checked');
+        const selectedKeyLength = document.querySelector<HTMLInputElement>('input[name="keyLength"]:checked');
 
         const manualKeyValue = manualKey.value.trim();
         const generatedKeyValue = generatedKey.textContent?.trim();
 
         let currentKey: string | null = null;
         if (manualKeyValue) {
-            // Jeśli klucz ręczny jest wprowadzony, użyj go
             currentKey = manualKeyValue;
             console.log("Używany klucz ręczny:", currentKey);
         } else if (generatedKeyValue && generatedKeyValue !== "brak") {
-            // Jeśli klucz ręczny nie jest wprowadzony, ale istnieje wygenerowany klucz, użyj go
             currentKey = generatedKeyValue;
             console.log("Używany wygenerowany klucz:", currentKey);
         } else {
-            // Jeśli żaden klucz nie jest dostępny, wyświetl komunikat
             alert("Brak klucza! Wprowadź klucz ręcznie lub wygeneruj nowy.");
             console.error("Brak klucza!");
-            return; // Zatrzymaj dalsze przetwarzanie
+            return;
         }
 
-        if (dataType) {
-            console.log("Data type: " + dataType?.value);
+        try {
+            let inputData: string;
+            
+            // Pobieranie danych wejściowych w zależności od wybranego typu
+            if (dataType?.value === 'text') {
+                inputData = textInput.value;
+                if (!inputData) {
+                    alert("Wprowadź tekst do przetworzenia!");
+                    return;
+                }
+            } else if (dataType?.value === 'file' && fileInput.files && fileInput.files[0]) {
+                try {
+                    inputData = await readFile(fileInput.files[0]);
+                } catch (error) {
+                    console.error("Błąd podczas odczytu pliku:", error);
+                    alert("Wystąpił błąd podczas odczytu pliku!");
+                    return;
+                }
+            } else {
+                alert("Wybierz plik lub wprowadź tekst!");
+                return;
+            }
+
+            const keyLength = parseInt(selectedKeyLength?.value || "128");
+            let result: string;
+
+            if (selectedRadioAction?.value === 'encrypt') {
+                result = encrypt(inputData, currentKey, keyLength);
+                console.log("Zaszyfrowano:", result);
+            } else {
+                result = decrypt(inputData, currentKey, keyLength);
+                console.log("Odszyfrowano:", result);
+            }
+
+            // Wyświetl wynik
+            resultDiv.textContent = result;
+            resultDiv.style.cssText = `
+                margin: 20px;
+                padding: 15px;
+                border: 1px solid #ccc;
+                border-radius: 5px;
+                background-color: #f9f9f9;
+                word-wrap: break-word;
+                color: black;
+            `;
+
+        } catch (error) {
+            console.error("Błąd podczas operacji:", error);
+            alert("Wystąpił błąd podczas operacji szyfrowania/deszyfrowania!");
         }
-
-        if (selectedRadioAction) {
-            console.log("Action: " + selectedRadioAction.value);
-        }
-
-
     });
 });

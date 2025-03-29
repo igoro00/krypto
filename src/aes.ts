@@ -1,177 +1,158 @@
+// aes.ts
+import { AddRoundKey } from './AddRoundKey';
 import { SubBytes } from './SubBytes';
 import { ShiftRows } from './ShiftRows';
 import { MixColumns } from './MixColumns';
-import { AddRoundKey } from './AddRoundKey';
 import { InvSubBytes } from './InvSubBytes';
 import { InvShiftRows } from './InvShiftRows';
 import { InvMixColumns } from './InvMixColumns';
 import { KeyExpansion } from './KeyExpansion';
 
-// Dodawanie paddingu PKCS#7
-function addPadding(data: number[]): number[] {
-  const blockSize = 16;
-  const paddingLength = blockSize - (data.length % blockSize);
-  const paddedData = new Array(data.length + paddingLength);
-  
-  // Kopiowanie oryginalnych danych
-  for (let i = 0; i < data.length; i++) {
-      paddedData[i] = data[i];
-  }
-  
-  // Dodawanie paddingu
-  for (let i = data.length; i < paddedData.length; i++) {
-      paddedData[i] = paddingLength;
-  }
-  
-  return paddedData;
-}
-
-// Usuwanie paddingu PKCS#7
-function removePadding(data: number[]): number[] {
-  if (data.length === 0 || data.length % 16 !== 0) {
-      throw new Error('Invalid data length');
-  }
-
-  const paddingLength = data[data.length - 1];
-  
-  if (paddingLength < 1 || paddingLength > 16) {
-      throw new Error('Invalid padding length');
-  }
-
-  // Sprawdzanie poprawności paddingu
-  for (let i = data.length - paddingLength; i < data.length; i++) {
-      if (data[i] !== paddingLength) {
-          throw new Error('Invalid padding values');
-      }
-  }
-
-  return data.slice(0, data.length - paddingLength);
-}
-
-export function encrypt(input: number[], key: number[], keySize: number): number[] {
-  if (!input || !key || !keySize) {
-    throw new Error('Invalid input parameters');
-}
-
-  const paddedInput = addPadding(input);
-  const blocks = [];
-  const expandedKey = KeyExpansion(key, keySize);
-  const Nr = keySize === 128 ? 10 : (keySize === 192 ? 12 : 14);
-
-  if (![128, 192, 256].includes(keySize)) {
-    throw new Error('Invalid key size');
-  } 
-
-  for (let i = 0; i < paddedInput.length; i += 16) {
-    let state = Array(4).fill(0).map(() => Array(4).fill(0));
-    for (let r = 0; r < 4; r++) {
-      for (let c = 0; c < 4; c++) {
-        state[r][c] = paddedInput[i + r + 4 * c];
-      }
+// Konwersja tekstu na tablicę bajtów
+export function stringToBytes(str: string): number[] {
+    const bytes = new Uint8Array(str.length);
+    for (let i = 0; i < str.length; i++) {
+        bytes[i] = str.charCodeAt(i);
     }
+    return Array.from(bytes);
+}
 
-    state = AddRoundKey(state, expandedKey.slice(0, 4));
+// Konwersja tablicy bajtów na tekst
+export function bytesToString(bytes: number[]): string {
+    return String.fromCharCode(...bytes);
+}
 
+// Konwersja hex stringa na tablicę bajtów
+export function hexToBytes(hex: string): number[] {
+    const bytes = [];
+    for (let i = 0; i < hex.length; i += 2) {
+        bytes.push(parseInt(hex.substr(i, 2), 16));
+    }
+    return bytes;
+}
+
+// Konwersja State na tablicę bajtów
+export function stateToBytes(state: number[][]): number[] {
+    const result = [];
+    for (let i = 0; i < 4; i++) {
+        for (let j = 0; j < 4; j++) {
+            result.push(state[j][i]);
+        }
+    }
+    return result;
+}
+
+// Konwersja tablicy bajtów na State
+export function bytesToState(bytes: number[]): number[][] {
+    const state = Array(4).fill(0).map(() => Array(4).fill(0));
+    for (let i = 0; i < 4; i++) {
+        for (let j = 0; j < 4; j++) {
+            state[j][i] = bytes[i * 4 + j];
+        }
+    }
+    return state;
+}
+
+// Szyfrowanie bloku
+export function encryptBlock(state: number[][], w: number[][], Nr: number): number[][] {
+    // Początkowe dodanie klucza rundowego
+    state = AddRoundKey(state, w.slice(0, 4));
+
+    // Nr-1 standardowych rund
     for (let round = 1; round < Nr; round++) {
-      state = SubBytes(state);
-      state = ShiftRows(state);
-      state = MixColumns(state);
-      state = AddRoundKey(state, expandedKey.slice(round * 4, (round + 1) * 4));
+        state = SubBytes(state);
+        state = ShiftRows(state);
+        state = MixColumns(state);
+        state = AddRoundKey(state, w.slice(round * 4, (round + 1) * 4));
     }
 
+    // Ostatnia runda (bez MixColumns)
     state = SubBytes(state);
     state = ShiftRows(state);
-    state = AddRoundKey(state, expandedKey.slice(Nr * 4, (Nr + 1) * 4));
+    state = AddRoundKey(state, w.slice(Nr * 4, (Nr + 1) * 4));
 
-    for (let r = 0; r < 4; r++) {
-      for (let c = 0; c < 4; c++) {
-        blocks.push(state[r][c]);
-      }
-    }
-  }
-
-  console.log('Zaszyfrowane dane:', blocks);
-  return blocks;
+    return state;
 }
 
-export function decrypt(input: number[], key: number[], keySize: number): number[] {
-  // Weryfikacja danych wejściowych
-  if (!input || !key || !keySize) {
-      throw new Error('Invalid input parameters');
-  }
+// Deszyfrowanie bloku
+export function decryptBlock(state: number[][], w: number[][], Nr: number): number[][] {
+    // Początkowe dodanie ostatniego klucza rundowego
+    state = AddRoundKey(state, w.slice(Nr * 4, (Nr + 1) * 4));
 
-  if (input.length % 16 !== 0) {
-      throw new Error('Invalid input length');
-  }
+    // Nr-1 standardowych rund
+    for (let round = Nr - 1; round > 0; round--) {
+        state = InvShiftRows(state);
+        state = InvSubBytes(state);
+        state = AddRoundKey(state, w.slice(round * 4, (round + 1) * 4));
+        state = InvMixColumns(state);
+    }
 
-  // Weryfikacja rozmiaru klucza
-  if (![128, 192, 256].includes(keySize)) {
-      throw new Error('Invalid key size');
-  }
+    // Ostatnia runda
+    state = InvShiftRows(state);
+    state = InvSubBytes(state);
+    state = AddRoundKey(state, w.slice(0, 4));
 
-  try {
-      const blocks: number[] = [];
-      const expandedKey = KeyExpansion(key, keySize);
-      const Nr = keySize === 128 ? 10 : (keySize === 192 ? 12 : 14);
+    return state;
+}
 
-      // Przetwarzanie bloków danych
-      for (let i = 0; i < input.length; i += 16) {
-          // Inicjalizacja stanu
-          let state = Array(4).fill(0).map(() => Array(4).fill(0));
-          
-          // Konwersja wejścia na macierz stanu
-          for (let r = 0; r < 4; r++) {
-              for (let c = 0; c < 4; c++) {
-                  state[r][c] = input[i + r + 4 * c];
-              }
-          }
+// Główna funkcja szyfrująca
+export function encrypt(input: string, key: string, keySize: number): string {
+    const Nk = keySize / 32;
+    const Nr = Nk + 6;
+    
+    // Konwersja klucza z hex na bajty
+    const keyBytes = hexToBytes(key);
+    
+    // Rozszerzenie klucza
+    const w = KeyExpansion(keyBytes, keySize);
 
-          // Początkowa runda - AddRoundKey
-          state = AddRoundKey(state, expandedKey.slice(Nr * 4, (Nr + 1) * 4));
+    // Konwersja wejścia na bajty
+    const inputBytes = stringToBytes(input);
 
-          // Główne rundy deszyfrowania
-          for (let round = Nr - 1; round > 0; round--) {
-              state = InvShiftRows(state);
-              state = InvSubBytes(state);
-              state = AddRoundKey(state, expandedKey.slice(round * 4, (round + 1) * 4));
-              state = InvMixColumns(state);
-          }
+    // Dodanie paddingu PKCS7
+    const paddingLength = 16 - (inputBytes.length % 16);
+    const paddedInput = [...inputBytes, ...Array(paddingLength).fill(paddingLength)];
 
-          // Ostatnia runda
-          state = InvShiftRows(state);
-          state = InvSubBytes(state);
-          state = AddRoundKey(state, expandedKey.slice(0, 4));
+    // Szyfrowanie bloków
+    const encrypted = [];
+    for (let i = 0; i < paddedInput.length; i += 16) {
+        const block = paddedInput.slice(i, i + 16);
+        const state = bytesToState(block);
+        const encryptedState = encryptBlock(state, w, Nr);
+        encrypted.push(...stateToBytes(encryptedState));
+    }
 
-          // Konwersja stanu z powrotem na tablicę
-          for (let r = 0; r < 4; r++) {
-              for (let c = 0; c < 4; c++) {
-                  blocks.push(state[r][c]);
-              }
-          }
-      }
+    // Konwersja zaszyfrowanych bajtów na hex string
+    return encrypted.map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
-      // Usuwanie paddingu i zwracanie wyniku
-      try {
-          const result = removePadding(blocks);
-          
-          // Dodatkowa weryfikacja wyniku
-          if (!result || result.length === 0) {
-              throw new Error('Invalid decryption result');
-          }
+// Główna funkcja deszyfrująca
+export function decrypt(input: string, key: string, keySize: number): string {
+    const Nk = keySize / 32;
+    const Nr = Nk + 6;
+    
+    // Konwersja klucza z hex na bajty
+    const keyBytes = hexToBytes(key);
+    
+    // Rozszerzenie klucza
+    const w = KeyExpansion(keyBytes, keySize);
 
-          // Sprawdzenie czy wszystkie bajty są w prawidłowym zakresie
-          if (!result.every(byte => Number.isInteger(byte) && byte >= 0 && byte <= 255)) {
-              throw new Error('Invalid byte values in decrypted data');
-          }
+    // Konwersja wejścia z hex na bajty
+    const inputBytes = hexToBytes(input);
 
-          return result;
-      } catch (paddingError) {
-          throw new Error(`Padding removal failed: ${paddingError}`);
-      }
+    // Deszyfrowanie bloków
+    const decrypted = [];
+    for (let i = 0; i < inputBytes.length; i += 16) {
+        const block = inputBytes.slice(i, i + 16);
+        const state = bytesToState(block);
+        const decryptedState = decryptBlock(state, w, Nr);
+        decrypted.push(...stateToBytes(decryptedState));
+    }
 
-  } catch (error) {
-      // Szczegółowy komunikat błędu
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error during decryption';
-      throw new Error(`Decryption failed: ${errorMessage}`);
-  }
+    // Usunięcie paddingu PKCS7
+    const paddingLength = decrypted[decrypted.length - 1];
+    const unpaddedDecrypted = decrypted.slice(0, -paddingLength);
+
+    // Konwersja odszyfrowanych bajtów na string
+    return bytesToString(unpaddedDecrypted);
 }
