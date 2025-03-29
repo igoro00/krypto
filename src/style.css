@@ -145,3 +145,7 @@ p {
 label {
     text-align: center;
 }
+
+#textInput {
+    text-align: start;
+}

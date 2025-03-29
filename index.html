@@ -8,9 +8,9 @@
 		<title>Kryptografia</title>
 	</head>
 	<body class="bg-gray-900">
-		<h1 class="text-4xl text-amber-200 text-center p-8 font-bold">
+		<!-- <h1 class="text-4xl text-amber-200 text-center p-8 font-bold">
 			Kryptografia
-		</h1>
+		</h1> -->
 		<script type="module" src="/src/main.ts"></script>
 		<header class="flex-col lg:flex-row">
 			<div class="drop-zone" onclick="document.getElementById('fileInput').click()">
@@ -22,8 +22,10 @@
 
 			<div class="right">
 				<div class="switch">
-					<button id="encrypt">Szyfruj</button>
-					<button id="decrypt">Deszyfruj</button>
+					<button id="encrypt-text">Szyfruj tekst <i class="fa-solid fa-font"></i></button>
+					<button id="decrypt-text">Deszyfruj tekst <i class="fa-solid fa-font"></i></button>
+					<button id="encrypt-file">Szyfruj plik <i class="fa-solid fa-file"></i></button>
+					<button id="decrypt-file">Deszyfruj plik <i class="fa-solid fa-file"></i></button>
 
 					<button id="generate-key">Generuj klucz</button>
 					<div id="keyHolder"> Wygenerowany klucz: <span id="key">brak klucza</span></div>
@@ -40,7 +42,7 @@
 		<main>
 			<div class="text">
 				<p>Wprowadź tekst do zaszyfrowania/deszyfrowania</p>
-				<input type="text">
+				<input type="text" id="textInput">
 			</div>
 			<div class="formGroup">
 				<p>Wybierz długość klucza:</p>
