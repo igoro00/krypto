@@ -41,7 +41,7 @@ header {
 
 .drop-zone {
     box-sizing: border-box;
-    height: 200px;
+    height: 60vh;
     border: 1.5px solid black;
     border-radius: 10px;
     display: flex;
@@ -123,8 +123,10 @@ p {
 }
 
 .text input {
-    height: 100%;
+    flex: 1;
+    height: 60vh;
     width: 100%;
+    border-radius: 10px;
 }
 
 .formGroup {
@@ -146,6 +148,20 @@ label {
     text-align: center;
 }
 
+.hidden {
+    display: none;
+}
+
 #textInput {
-    text-align: start;
+    padding: 10px;
+    text-align: left;
+    background: #f8f9fa;
+    color: black;
+    font-weight: 500;
+    border: 1px solid black;
+    width: 100%;
+    border-radius: 10px;
+    resize: none;
+    height: 60vh;
+    box-sizing: border-box;
 }

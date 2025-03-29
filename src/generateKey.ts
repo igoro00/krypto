@@ -1,4 +1,4 @@
-export function generateKey(n: number = 128): Uint8Array {
+export function generateKey(n: number): Uint8Array {
     const key = new Uint8Array(n / 8);
     crypto.getRandomValues(key);
     return key;  
