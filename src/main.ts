@@ -46,20 +46,53 @@ document.addEventListener('DOMContentLoaded', () => {
     // Inicjalna aktualizacja widoczności
     updateVisibility();
 
-    // Funkcja do odczytu pliku
-    function readFile(file: File): Promise<string> {
+    // Funkcja do odczytu pliku jako ArrayBuffer
+    function readFileAsArrayBuffer(file: File): Promise<ArrayBuffer> {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = () => {
-                if (typeof reader.result === 'string') {
+                if (reader.result instanceof ArrayBuffer) {
                     resolve(reader.result);
                 } else {
-                    reject(new Error('Failed to read file as text'));
+                    reject(new Error('Failed to read file as ArrayBuffer'));
                 }
             };
             reader.onerror = () => reject(reader.error);
-            reader.readAsText(file);
+            reader.readAsArrayBuffer(file);
         });
+    }
+
+    // Funkcja do konwersji danych binarnych na hex string
+    function binaryToHex(data: Uint8Array): string {
+        return Array.from(data)
+            .map(byte => byte.toString(16).padStart(2, '0'))
+            .join('');
+    }
+
+    // Funkcja do konwersji hex string na dane binarne
+    function hexToBinary(hex: string): Uint8Array {
+        const matches = hex.match(/.{1,2}/g) || [];
+        return new Uint8Array(matches.map(byte => parseInt(byte, 16)));
+    }
+
+    // Funkcja do szyfrowania pliku
+    async function encryptFile(file: File, key: string, keySize: number): Promise<Blob> {
+        const arrayBuffer = await readFileAsArrayBuffer(file);
+        const inputBytes = new Uint8Array(arrayBuffer);
+        const hexData = binaryToHex(inputBytes);
+        const encryptedHex = encrypt(hexData, key, keySize);
+        const encryptedBytes = hexToBinary(encryptedHex);
+        return new Blob([encryptedBytes], { type: 'application/octet-stream' });
+    }
+
+    // Funkcja do deszyfrowania pliku
+    async function decryptFile(file: File, key: string, keySize: number): Promise<Blob> {
+        const arrayBuffer = await readFileAsArrayBuffer(file);
+        const inputBytes = new Uint8Array(arrayBuffer);
+        const hexData = binaryToHex(inputBytes);
+        const decryptedHex = decrypt(hexData, key, keySize);
+        const decryptedBytes = hexToBinary(decryptedHex);
+        return new Blob([decryptedBytes], { type: file.type || 'application/octet-stream' });
     }
 
     // Obsługa generowania klucza
@@ -101,50 +134,64 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            let inputData: string;
-            
-            // Pobieranie danych wejściowych w zależności od wybranego typu
+            const keyLength = parseInt(selectedKeyLength?.value || "128");
+
             if (dataType?.value === 'text') {
-                inputData = textInput.value;
+                // Obsługa tekstu
+                const inputData = textInput.value;
                 if (!inputData) {
                     alert("Wprowadź tekst do przetworzenia!");
                     return;
                 }
-            } else if (dataType?.value === 'file' && fileInput.files && fileInput.files[0]) {
-                try {
-                    inputData = await readFile(fileInput.files[0]);
-                } catch (error) {
-                    console.error("Błąd podczas odczytu pliku:", error);
-                    alert("Wystąpił błąd podczas odczytu pliku!");
-                    return;
+
+                let result: string;
+                if (selectedRadioAction?.value === 'encrypt') {
+                    result = encrypt(inputData, currentKey, keyLength);
+                    console.log("Zaszyfrowano tekst");
+                } else {
+                    result = decrypt(inputData, currentKey, keyLength);
+                    console.log("Odszyfrowano tekst");
                 }
+
+                // Wyświetl wynik
+                resultDiv.textContent = result;
+                resultDiv.style.cssText = `
+                    margin: 20px;
+                    padding: 15px;
+                    border: 1px solid #ccc;
+                    border-radius: 5px;
+                    background-color: #f9f9f9;
+                    word-wrap: break-word;
+                    color: black;
+                `;
+
+            } else if (dataType?.value === 'file' && fileInput.files && fileInput.files[0]) {
+                // Obsługa pliku
+                const file = fileInput.files[0];
+                let resultBlob: Blob;
+
+                if (selectedRadioAction?.value === 'encrypt') {
+                    resultBlob = await encryptFile(file, currentKey, keyLength);
+                    console.log("Zaszyfrowano plik");
+                } else {
+                    resultBlob = await decryptFile(file, currentKey, keyLength);
+                    console.log("Odszyfrowano plik");
+                }
+
+                // Pobierz plik
+                const a = document.createElement('a');
+                const url = window.URL.createObjectURL(resultBlob);
+                a.href = url;
+                a.download = file.name + (selectedRadioAction?.value === 'encrypt' ? '.enc' : '.dec');
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+
             } else {
                 alert("Wybierz plik lub wprowadź tekst!");
                 return;
             }
-
-            const keyLength = parseInt(selectedKeyLength?.value || "128");
-            let result: string;
-
-            if (selectedRadioAction?.value === 'encrypt') {
-                result = encrypt(inputData, currentKey, keyLength);
-                console.log("Zaszyfrowano:", result);
-            } else {
-                result = decrypt(inputData, currentKey, keyLength);
-                console.log("Odszyfrowano:", result);
-            }
-
-            // Wyświetl wynik
-            resultDiv.textContent = result;
-            resultDiv.style.cssText = `
-                margin: 20px;
-                padding: 15px;
-                border: 1px solid #ccc;
-                border-radius: 5px;
-                background-color: #f9f9f9;
-                word-wrap: break-word;
-                color: black;
-            `;
 
         } catch (error) {
             console.error("Błąd podczas operacji:", error);

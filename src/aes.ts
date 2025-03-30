@@ -19,7 +19,11 @@ export function stringToBytes(str: string): number[] {
 
 // Konwersja tablicy bajtów na tekst
 export function bytesToString(bytes: number[]): string {
-    return String.fromCharCode(...bytes);
+    try {
+        return String.fromCharCode(...bytes);
+    } catch (e) {
+        return bytes.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
 }
 
 // Konwersja hex stringa na tablicę bajtów
@@ -29,6 +33,11 @@ export function hexToBytes(hex: string): number[] {
         bytes.push(parseInt(hex.substr(i, 2), 16));
     }
     return bytes;
+}
+
+// Konwersja tablicy bajtów na hex string
+export function bytesToHex(bytes: number[]): string {
+    return bytes.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 // Konwersja State na tablicę bajtów
@@ -53,12 +62,32 @@ export function bytesToState(bytes: number[]): number[][] {
     return state;
 }
 
+// Dodanie paddingu PKCS7
+function addPKCS7Padding(data: number[]): number[] {
+    const blockSize = 16;
+    const paddingLength = blockSize - (data.length % blockSize);
+    return [...data, ...Array(paddingLength).fill(paddingLength)];
+}
+
+// Usunięcie paddingu PKCS7
+function removePKCS7Padding(data: number[]): number[] {
+    const paddingLength = data[data.length - 1];
+    if (paddingLength > 16 || paddingLength < 1) {
+        throw new Error('Invalid padding');
+    }
+    // Sprawdzenie czy padding jest poprawny
+    for (let i = data.length - paddingLength; i < data.length; i++) {
+        if (data[i] !== paddingLength) {
+            throw new Error('Invalid padding');
+        }
+    }
+    return data.slice(0, -paddingLength);
+}
+
 // Szyfrowanie bloku
 export function encryptBlock(state: number[][], w: number[][], Nr: number): number[][] {
-    // Początkowe dodanie klucza rundowego
     state = AddRoundKey(state, w.slice(0, 4));
 
-    // Nr-1 standardowych rund
     for (let round = 1; round < Nr; round++) {
         state = SubBytes(state);
         state = ShiftRows(state);
@@ -66,7 +95,6 @@ export function encryptBlock(state: number[][], w: number[][], Nr: number): numb
         state = AddRoundKey(state, w.slice(round * 4, (round + 1) * 4));
     }
 
-    // Ostatnia runda (bez MixColumns)
     state = SubBytes(state);
     state = ShiftRows(state);
     state = AddRoundKey(state, w.slice(Nr * 4, (Nr + 1) * 4));
@@ -76,10 +104,8 @@ export function encryptBlock(state: number[][], w: number[][], Nr: number): numb
 
 // Deszyfrowanie bloku
 export function decryptBlock(state: number[][], w: number[][], Nr: number): number[][] {
-    // Początkowe dodanie ostatniego klucza rundowego
     state = AddRoundKey(state, w.slice(Nr * 4, (Nr + 1) * 4));
 
-    // Nr-1 standardowych rund
     for (let round = Nr - 1; round > 0; round--) {
         state = InvShiftRows(state);
         state = InvSubBytes(state);
@@ -87,7 +113,6 @@ export function decryptBlock(state: number[][], w: number[][], Nr: number): numb
         state = InvMixColumns(state);
     }
 
-    // Ostatnia runda
     state = InvShiftRows(state);
     state = InvSubBytes(state);
     state = AddRoundKey(state, w.slice(0, 4));
@@ -107,11 +132,17 @@ export function encrypt(input: string, key: string, keySize: number): string {
     const w = KeyExpansion(keyBytes, keySize);
 
     // Konwersja wejścia na bajty
-    const inputBytes = stringToBytes(input);
+    let inputBytes: number[];
+    if (input.match(/^[0-9a-fA-F]+$/)) {
+        // Jeśli input jest już w formacie hex
+        inputBytes = hexToBytes(input);
+    } else {
+        // Jeśli input jest zwykłym tekstem
+        inputBytes = stringToBytes(input);
+    }
 
     // Dodanie paddingu PKCS7
-    const paddingLength = 16 - (inputBytes.length % 16);
-    const paddedInput = [...inputBytes, ...Array(paddingLength).fill(paddingLength)];
+    const paddedInput = addPKCS7Padding(inputBytes);
 
     // Szyfrowanie bloków
     const encrypted = [];
@@ -122,8 +153,8 @@ export function encrypt(input: string, key: string, keySize: number): string {
         encrypted.push(...stateToBytes(encryptedState));
     }
 
-    // Konwersja zaszyfrowanych bajtów na hex string
-    return encrypted.map(b => b.toString(16).padStart(2, '0')).join('');
+    // Zwróć zaszyfrowane dane jako hex string
+    return bytesToHex(encrypted);
 }
 
 // Główna funkcja deszyfrująca
@@ -149,10 +180,15 @@ export function decrypt(input: string, key: string, keySize: number): string {
         decrypted.push(...stateToBytes(decryptedState));
     }
 
-    // Usunięcie paddingu PKCS7
-    const paddingLength = decrypted[decrypted.length - 1];
-    const unpaddedDecrypted = decrypted.slice(0, -paddingLength);
+    try {
+        // Usuń padding
+        const unpaddedDecrypted = removePKCS7Padding(decrypted);
 
-    // Konwersja odszyfrowanych bajtów na string
-    return bytesToString(unpaddedDecrypted);
+        // Spróbuj przekonwertować na tekst
+        return bytesToString(unpaddedDecrypted);
+    } catch (e) {
+        // Jeśli nie można przekonwertować na tekst lub padding jest niepoprawny,
+        // zwróć hex string
+        return bytesToHex(decrypted);
+    }
 }
