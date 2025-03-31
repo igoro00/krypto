@@ -10,22 +10,32 @@ import { KeyExpansion } from './KeyExpansion';
 
 // Konwersja tekstu na tablicę bajtów
 export function stringToBytes(str: string): number[] {
-    const bytes = new Uint8Array(str.length);
-    for (let i = 0; i < str.length; i++) {
-        bytes[i] = str.charCodeAt(i);
+    if (str.match(/^[0-9a-fA-F]+$/)) {
+        // Jeśli to hex string, konwertuj bezpośrednio
+        return hexToBytes(str);
+    } else {
+        // Dla zwykłego tekstu użyj TextEncoder dla obsługi polskich znaków
+        const encoder = new TextEncoder();
+        return Array.from(encoder.encode(str));
     }
-    return Array.from(bytes);
 }
 
 // Konwersja tablicy bajtów na tekst
 export function bytesToString(bytes: number[]): string {
     try {
-        return String.fromCharCode(...bytes);
+        // Najpierw próbujemy zdekodować jako UTF-8
+        const decoder = new TextDecoder('utf-8');
+        const text = decoder.decode(new Uint8Array(bytes));
+        // Sprawdź czy tekst zawiera czytelne znaki
+        if (text.match(/^[\x20-\x7E\u00A0-\uFFFF]+$/)) {
+            return text;
+        }
+        throw new Error('Not a valid text');
     } catch (e) {
+        // Jeśli nie udało się zdekodować jako tekst, zwróć hex
         return bytes.map(b => b.toString(16).padStart(2, '0')).join('');
     }
 }
-
 // Konwersja hex stringa na tablicę bajtów
 export function hexToBytes(hex: string): number[] {
     const bytes = [];

@@ -1,6 +1,6 @@
 import { dragAndDrop } from './dragAndDrop';
 import { bytesToHex, generateKey } from './generateKey';
-import { encrypt, decrypt } from './aes';
+import { encrypt, decrypt, hexToBytes } from './aes';
 import './style.css';
 
 dragAndDrop();
@@ -143,16 +143,33 @@ document.addEventListener('DOMContentLoaded', () => {
                     alert("Wprowadź tekst do przetworzenia!");
                     return;
                 }
-
+            
                 let result: string;
                 if (selectedRadioAction?.value === 'encrypt') {
-                    result = encrypt(inputData, currentKey, keyLength);
+                    // Dla szyfrowania tekstu
+                    const encoder = new TextEncoder();
+                    const uint8Array = encoder.encode(inputData);
+                    const hexString = Array.from(uint8Array)
+                        .map(b => b.toString(16).padStart(2, '0'))
+                        .join('');
+                    result = encrypt(hexString, currentKey, keyLength);
                     console.log("Zaszyfrowano tekst");
                 } else {
-                    result = decrypt(inputData, currentKey, keyLength);
-                    console.log("Odszyfrowano tekst");
+                    // Dla deszyfrowania tekstu
+                    const decryptedHex = decrypt(inputData, currentKey, keyLength);
+                    try {
+                        const bytes = new Uint8Array(
+                            decryptedHex.match(/.{1,2}/g)?.map(byte => parseInt(byte, 16)) || []
+                        );
+                        const decoder = new TextDecoder('utf-8');
+                        result = decoder.decode(bytes);
+                        console.log("Odszyfrowano tekst");
+                    } catch (e) {
+                        result = decryptedHex;
+                        console.log("Odszyfrowano tekst (format hex)");
+                    }
                 }
-
+            
                 // Wyświetl wynik
                 resultDiv.textContent = result;
                 resultDiv.style.cssText = `
@@ -164,7 +181,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     word-wrap: break-word;
                     color: black;
                 `;
-
             } else if (dataType?.value === 'file' && fileInput.files && fileInput.files[0]) {
                 // Obsługa pliku
                 const file = fileInput.files[0];
