@@ -3,6 +3,55 @@ import { bytesToHex, generateKey } from './generateKey';
 import { encrypt, decrypt, hexToBytes } from './aes';
 import './style.css';
 
+function showLoading() {
+    const loadingDiv = document.createElement('div');
+    loadingDiv.id = 'loading';
+    loadingDiv.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    `;
+
+    const loadingImg = document.createElement('img');
+    loadingImg.src = 'loading.gif';
+    loadingImg.alt = 'Loading...';
+    loadingImg.style.cssText = `
+        width: 100px;
+        height: 100px;
+    `;
+
+    const loadingText = document.createElement('div');
+    loadingText.textContent = 'Proszę czekać...';
+    loadingText.style.cssText = `
+        color: white;
+        font-size: 18px;
+        margin-top: 10px;
+        text-align: center;
+    `;
+
+    const container = document.createElement('div');
+    container.style.textAlign = 'center';
+    container.appendChild(loadingImg);
+    container.appendChild(loadingText);
+    loadingDiv.appendChild(container);
+
+    document.body.appendChild(loadingDiv);
+}
+
+function hideLoading() {
+    const loadingDiv = document.getElementById('loading');
+    if (loadingDiv) {
+        document.body.removeChild(loadingDiv);
+    }
+}
+
 dragAndDrop();
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -113,6 +162,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     action?.addEventListener('click', async () => {
+        showLoading();
+
         const selectedRadioAction = document.querySelector<HTMLInputElement>('input[name="operation"]:checked');
         const dataType = document.querySelector<HTMLInputElement>('input[name="dataType"]:checked');
         const selectedKeyLength = document.querySelector<HTMLInputElement>('input[name="keyLength"]:checked');
@@ -128,6 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
             currentKey = generatedKeyValue;
             console.log("Używany wygenerowany klucz:", currentKey);
         } else {
+            hideLoading();
             alert("Brak klucza! Wprowadź klucz ręcznie lub wygeneruj nowy.");
             console.error("Brak klucza!");
             return;
@@ -140,6 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Obsługa tekstu
                 const inputData = textInput.value;
                 if (!inputData) {
+                    hideLoading();
                     alert("Wprowadź tekst do przetworzenia!");
                     return;
                 }
@@ -205,6 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.URL.revokeObjectURL(url);
 
             } else {
+                hideLoading();
                 alert("Wybierz plik lub wprowadź tekst!");
                 return;
             }
@@ -212,6 +266,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error("Błąd podczas operacji:", error);
             alert("Wystąpił błąd podczas operacji szyfrowania/deszyfrowania!");
+        } finally {
+            hideLoading();
         }
     });
 });
