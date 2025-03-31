@@ -16,6 +16,7 @@ h1 {
 header {
     display: flex;
     font-size: larger;
+    gap: 20px;
 }
 
 .right {
@@ -37,6 +38,9 @@ header {
 
 .switch input {
     text-align: center;
+    background: var(--color-gray-700);
+    border: 2px solid var(--color-gray-600);
+    color: white;
 }
 
 .drop-zone {
@@ -87,10 +91,11 @@ header {
 }
 
 button {
-    background: #f8f9fa;
-    color: black;
+    /* background: #f8f9fa; */
+    background: var(--color-gray-700);
+    /* color: black; */
     font-weight: 500;
-    border: 1px solid black;
+    border: 2px solid var(--color-gray-600);
     padding: 13px;
     border-radius: 10px;
     cursor: pointer;
@@ -155,10 +160,11 @@ label {
 #textInput {
     padding: 10px;
     text-align: left;
-    background: #f8f9fa;
-    color: black;
+    /* background: #f8f9fa; */
+    background: var(--color-gray-700);
+    /* color: white; */
     font-weight: 500;
-    border: 1px solid black;
+    border: 2px solid var(--color-gray-600);
     width: 100%;
     border-radius: 10px;
     resize: none;
