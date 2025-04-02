@@ -225,7 +225,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const a = document.createElement('a');
                 const url = window.URL.createObjectURL(resultBlob);
                 a.href = url;
-                a.download = file.name + (selectedRadioAction?.value === 'encrypt' ? '.enc' : '.dec');
+                if (selectedRadioAction?.value === 'encrypt') {
+                    a.download = file.name + '.enc';
+                } else {
+                    a.download = file.name.replace('.enc', '');
+                }
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
