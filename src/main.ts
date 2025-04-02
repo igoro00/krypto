@@ -2,6 +2,7 @@ import { dragAndDrop } from './dragAndDrop';
 import { bytesToHex, generateKey } from './generateKey';
 import { encrypt, decrypt } from './aes';
 import './style.css';
+import { bufferToBase64, log } from './utils';
 
 function showLoading() {
     const loadingDiv = document.createElement('div');
@@ -55,7 +56,7 @@ function hideLoading() {
 dragAndDrop();
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("Site Loaded");
+    log("Site Loaded");
     
     // Pobieranie elementów DOM
     const action = document.getElementById('action');
@@ -151,13 +152,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     generatedKeyButton.addEventListener('click', () => {
-        console.log("Generating key...");
+        log("Generating key...");
         const selectedRadio = document.querySelector<HTMLInputElement>('input[name="keyLength"]:checked');
         if (selectedRadio) {
             const keyLength = parseInt(selectedRadio.value);
             const generatedKeyValue = generateKey(keyLength);
             generatedKey.textContent = bytesToHex(generatedKeyValue);
-            console.log("Wygenerowano klucz:", generatedKey.textContent + "\ndługość klucza: " + keyLength);
+            log("Wygenerowano klucz:", generatedKey.textContent + "\ndługość klucza: " + keyLength);
         }
     });
 
@@ -174,10 +175,10 @@ document.addEventListener('DOMContentLoaded', () => {
         let currentKey: string | null = null;
         if (manualKeyValue) {
             currentKey = manualKeyValue;
-            console.log("Używany klucz ręczny:", currentKey);
+            log("Używany klucz ręczny:", currentKey);
         } else if (generatedKeyValue && generatedKeyValue !== "brak") {
             currentKey = generatedKeyValue;
-            console.log("Używany wygenerowany klucz:", currentKey);
+            log("Używany wygenerowany klucz:", currentKey);
         } else {
             hideLoading();
             alert("Brak klucza! Wprowadź klucz ręcznie lub wygeneruj nowy.");
@@ -202,11 +203,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Dla szyfrowania tekstu
                     const encoder = new TextEncoder();
                     const uint8Array = encoder.encode(inputData);
-                    const hexString = Array.from(uint8Array)
-                        .map(b => b.toString(16).padStart(2, '0'))
-                        .join('');
-                    result = await encrypt(hexString, currentKey, keyLength);
-                    console.log("Zaszyfrowano tekst");
+                    const encrypted = await encrypt(uint8Array, currentKey, keyLength);
+                    result = await bufferToBase64(encrypted);
+                    log("Zaszyfrowano tekst");
                 } else {
                     // Dla deszyfrowania tekstu
                     const decryptedHex = decrypt(inputData, currentKey, keyLength);
@@ -216,10 +215,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         );
                         const decoder = new TextDecoder('utf-8');
                         result = decoder.decode(bytes);
-                        console.log("Odszyfrowano tekst");
+                        log("Odszyfrowano tekst");
                     } catch (e) {
                         result = decryptedHex;
-                        console.log("Odszyfrowano tekst (format hex)");
+                        log("Odszyfrowano tekst (format hex)");
                     }
                 }
             
@@ -241,10 +240,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (selectedRadioAction?.value === 'encrypt') {
                     resultBlob = await encryptFile(file, currentKey, keyLength);
-                    console.log("Zaszyfrowano plik");
+                    log("Zaszyfrowano plik");
                 } else {
                     resultBlob = await decryptFile(file, currentKey, keyLength);
-                    console.log("Odszyfrowano plik");
+                    log("Odszyfrowano plik");
                 }
 
                 // Pobierz plik
@@ -273,16 +272,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Testowanie paddingu dla krótkiego bloku
     // const shortData = stringToBytes("test"); // 4 bajty
-    // console.log("Oryginalne dane:", shortData);
+    // log("Oryginalne dane:", shortData);
     // const paddedData = addPKCS7Padding(shortData);
-    // console.log("Po dodaniu paddingu:", paddedData);
-    // console.log("Długość po paddingu:", paddedData.length);
+    // log("Po dodaniu paddingu:", paddedData);
+    // log("Długość po paddingu:", paddedData.length);
 
     // // Sprawdź czy padding jest poprawnie usuwany
     // try {
     //     const unpaddedData = removePKCS7Padding(paddedData);
-    //     console.log("Po usunięciu paddingu:", unpaddedData);
-    //     console.log("Długość po usunięciu paddingu:", unpaddedData.length);
+    //     log("Po usunięciu paddingu:", unpaddedData);
+    //     log("Długość po usunięciu paddingu:", unpaddedData.length);
     // } catch (e) {
     //     console.error("Błąd podczas usuwania paddingu:", e);
     // }

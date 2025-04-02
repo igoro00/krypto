@@ -7,6 +7,7 @@ import { InvSubBytes } from './InvSubBytes';
 import { InvShiftRows } from './InvShiftRows';
 import { InvMixColumns } from './InvMixColumns';
 import { keyExpansion } from './KeyExpansion';
+import { log } from './utils';
 
 // Konwersja tekstu na tablicę bajtów
 export function stringToBytes(str: string): number[] {
@@ -73,32 +74,34 @@ export function bytesToState(bytes: number[]): number[][] {
 }
 
 // Dodanie paddingu PKCS7
-export function addPKCS7Padding(data: number[]): number[] {
-    console.log('Dane wejściowe przed paddingiem:', data);
-    console.log('Długość danych przed paddingiem:', data.length);
+export function addPKCS7Padding(data: Uint8Array): Uint8Array {
+    log('Dane wejściowe przed paddingiem:', data);
+    log('Długość danych przed paddingiem:', data.length);
     
     const blockSize = 16;
     const paddingLength = blockSize - (data.length % blockSize);
     
-    console.log("Obliczona długość paddingu:", paddingLength);
+    log("Obliczona długość paddingu:", paddingLength);
     
-    const paddedData = [...data, ...Array(paddingLength).fill(paddingLength)];
+    const paddedData = new Uint8Array(data.length + paddingLength);
+    paddedData.fill(paddingLength) // wypełnij całość paddingLength
+    paddedData.set(data); // nadpisz pierwsze data.length bajtów
     
-    console.log('Dane po dodaniu paddingu:', paddedData);
-    console.log('Długość danych po paddingu:', paddedData.length);
-    console.log('Ostatni bajt (wartość paddingu):', paddedData[paddedData.length - 1]);
+    log('Dane po dodaniu paddingu:', paddedData);
+    log('Długość danych po paddingu:', paddedData.length);
+    log('Ostatni bajt (wartość paddingu):', paddedData[paddedData.length - 1]);
     
     // Sprawdź czy padding jest poprawny
     const isValid = paddedData.slice(-paddingLength).every(b => b === paddingLength);
-    console.log('Padding poprawny:', isValid);
+    log('Padding poprawny:', isValid);
     
     return paddedData;
 }
 
 // Usunięcie paddingu PKCS7
-export function removePKCS7Padding(data: number[]): number[] {
-    console.log('Dane przed usunięciem paddingu:', data);
-    console.log('Długość danych przed usunięciem paddingu:', data.length);
+export function removePKCS7Padding(data: Uint8Array): Uint8Array {
+    log('Dane przed usunięciem paddingu:', data);
+    log('Długość danych przed usunięciem paddingu:', data.length);
     
     if (data.length === 0 || data.length % 16 !== 0) {
         console.error('Nieprawidłowa długość danych:', data.length);
@@ -106,7 +109,7 @@ export function removePKCS7Padding(data: number[]): number[] {
     }
     
     const paddingLength = data[data.length - 1];
-    console.log('Wykryta długość paddingu:', paddingLength);
+    log('Wykryta długość paddingu:', paddingLength);
     
     if (paddingLength > 16 || paddingLength < 1) {
         console.error('Nieprawidłowa wartość paddingu:', paddingLength);
@@ -127,8 +130,8 @@ export function removePKCS7Padding(data: number[]): number[] {
     }
     
     const unpaddedData = data.slice(0, -paddingLength);
-    console.log('Dane po usunięciu paddingu:', unpaddedData);
-    console.log('Długość danych po usunięciu paddingu:', unpaddedData.length);
+    log('Dane po usunięciu paddingu:', unpaddedData);
+    log('Długość danych po usunięciu paddingu:', unpaddedData.length);
     
     return unpaddedData;
 }
@@ -168,84 +171,64 @@ export function decryptBlock(state: number[][], w: number[][], Nr: number): numb
 
     return state;
 }
-
-export async function bufferToBase64(buffer: Uint8Array): Promise<string> {
-    // use a FileReader to generate a base64 data URI:
-    const base64url = await new Promise<string>(r => {
-      const reader = new FileReader()
-      reader.onload = () => r(reader.result as string)
-      reader.readAsDataURL(new Blob([buffer]))
-    });
-    // remove the `data:...;base64,` part from the start
-    return base64url.slice(base64url.indexOf(',') + 1);
-}
-
-export async function base64ToBuffer(b64:string): Promise<ArrayBuffer> {
-    var dataUrl = "data:application/octet-binary;base64," + b64;
-
-    const res = await fetch(dataUrl)
-    return await res.arrayBuffer();        
-}
-
 // Główna funkcja szyfrująca - dodaj logi
 export async function encrypt(input: Uint8Array, key: string, keySize: number): Promise<Uint8Array> {
     const inputBytes:number[] = Array.from(input)
     
     // Konwersja klucza z hex na bajty
     const keyBytes = hexToBytes(key);
-    console.log('Klucz (bajty):', keyBytes);
+    log('Klucz (bajty):', keyBytes);
     
     // Rozszerzenie klucza
     const w = keyExpansion(keyBytes, keySize);
         
-    console.log('Dane po konwersji na bajty:', inputBytes);
-    console.log('Długość danych w bajtach:', inputBytes.length);
+    log('Dane po konwersji na bajty:', inputBytes);
+    log('Długość danych w bajtach:', inputBytes.length);
     
     // Dodanie paddingu PKCS7
     const paddedInput = addPKCS7Padding(inputBytes);
     
     // Szyfrowanie bloków
-    console.log('Liczba bloków do zaszyfrowania:', paddedInput.length / 16);
+    log('Liczba bloków do zaszyfrowania:', paddedInput.length / 16);
     const encrypted = [];
     for (let i = 0; i < paddedInput.length; i += 16) {
-        console.log(`Szyfrowanie bloku ${i/16 + 1}/${paddedInput.length/16}`);
+        log(`Szyfrowanie bloku ${i/16 + 1}/${paddedInput.length/16}`);
         const block = paddedInput.slice(i, i + 16);
-        console.log('Blok przed szyfrowaniem:', block);
+        log('Blok przed szyfrowaniem:', block);
         
         const state = bytesToState(block);
         const encryptedState = encryptBlock(state, w, Nr);
         const encryptedBlock = stateToBytes(encryptedState);
         
-        console.log('Blok po zaszyfrowaniu:', encryptedBlock);
+        log('Blok po zaszyfrowaniu:', encryptedBlock);
         encrypted.push(...encryptedBlock);
     }
     
-    console.log('Całkowita długość zaszyfrowanych danych:', encrypted.length);
+    log('Całkowita długość zaszyfrowanych danych:', encrypted.length);
     
     return new Uint8Array(encrypted);;
 }
 
 
 // Główna funkcja deszyfrująca - dodaj logi
-export function decrypt(input: string, key: string, keySize: number): string {
-    console.log('=== DESZYFROWANIE ===');
-    console.log('Dane wejściowe (hex):', input.substring(0, 50) + (input.length > 50 ? '...' : ''));
-    console.log('Długość danych wejściowych:', input.length);
+export function decrypt(input: Uint8Array, key: string, keySize: number): Uint8Array {
+    log('=== DESZYFROWANIE ===');
+    log('Dane wejściowe (hex):', input);
     
     const Nk = keySize / 32;
     const Nr = Nk + 6;
     
     // Konwersja klucza z hex na bajty
     const keyBytes = hexToBytes(key);
-    console.log('Klucz (bajty):', keyBytes);
+    log('Klucz (bajty):', keyBytes);
     
     // Rozszerzenie klucza
     const w = keyExpansion(keyBytes, keySize);
     
     // Konwersja wejścia z hex na bajty
-    const inputBytes = hexToBytes(input);
-    console.log('Dane po konwersji z hex na bajty:', inputBytes);
-    console.log('Długość danych w bajtach:', inputBytes.length);
+    const inputBytes = Array.from(input);
+    log('Dane po konwersji z hex na bajty:', inputBytes);
+    log('Długość danych w bajtach:', inputBytes.length);
     
     if (inputBytes.length % 16 !== 0) {
         console.error('Nieprawidłowa długość danych wejściowych:', inputBytes.length);
@@ -253,129 +236,32 @@ export function decrypt(input: string, key: string, keySize: number): string {
     }
     
     // Deszyfrowanie bloków
-    console.log('Liczba bloków do odszyfrowania:', inputBytes.length / 16);
+    log('Liczba bloków do odszyfrowania:', inputBytes.length / 16);
     const decrypted = [];
     for (let i = 0; i < inputBytes.length; i += 16) {
-        console.log(`Deszyfrowanie bloku ${i/16 + 1}/${inputBytes.length/16}`);
+        log(`Deszyfrowanie bloku ${i/16 + 1}/${inputBytes.length/16}`);
         const block = inputBytes.slice(i, i + 16);
-        console.log('Blok przed deszyfrowaniem:', block);
+        log('Blok przed deszyfrowaniem:', block);
         
         const state = bytesToState(block);
         const decryptedState = decryptBlock(state, w, Nr);
         const decryptedBlock = stateToBytes(decryptedState);
         
-        console.log('Blok po odszyfrowaniu:', decryptedBlock);
+        log('Blok po odszyfrowaniu:', decryptedBlock);
         decrypted.push(...decryptedBlock);
     }
     
-    console.log('Całkowita długość odszyfrowanych danych (z paddingiem):', decrypted.length);
-    console.log('Ostatni bajt (potencjalna wartość paddingu):', decrypted[decrypted.length - 1]);
+    log('Całkowita długość odszyfrowanych danych (z paddingiem):', decrypted.length);
+    log('Ostatni bajt (potencjalna wartość paddingu):', decrypted[decrypted.length - 1]);
     
     try {
         // Usuń padding
-        console.log('Próba usunięcia paddingu PKCS7...');
-        const unpaddedDecrypted = removePKCS7Padding(decrypted);
-        
-        // Spróbuj przekonwertować na tekst
-        console.log('Próba konwersji na tekst...');
-        const result = bytesToString(unpaddedDecrypted);
-        console.log('Wynik deszyfrowania:', result.substring(0, 50) + (result.length > 50 ? '...' : ''));
+        log('Próba usunięcia paddingu PKCS7...');
+        const result = removePKCS7Padding(new Uint8Array(decrypted));
+        log('Wynik deszyfrowania:', result);
         return result;
     } catch (e) {
         console.error('Błąd podczas przetwarzania odszyfrowanych danych:', e);
-        // Jeśli nie można przekonwertować na tekst lub padding jest niepoprawny,
-        // zwróć hex string
-        const result = bytesToHex(decrypted);
-        console.log('Wynik deszyfrowania (hex):', result.substring(0, 50) + (result.length > 50 ? '...' : ''));
-        return result;
-    }
-}
-
-// Dodaj ten kod na końcu funkcji DOMContentLoaded
-console.log("=== TEST PADDINGU ===");
-const testText = "kotek"; // 5 bajtów
-console.log("Tekst testowy:", testText);
-
-// Konwersja na bajty
-const encoder = new TextEncoder();
-const testBytes = Array.from(encoder.encode(testText));
-console.log("Bajty:", testBytes);
-console.log("Długość:", testBytes.length);
-
-// Dodanie paddingu
-const paddedBytes = addPKCS7Padding(testBytes);
-console.log("Po paddingu:", paddedBytes);
-console.log("Długość po paddingu:", paddedBytes.length);
-
-// Symulacja szyfrowania i deszyfrowania (pomijamy faktyczne szyfrowanie)
-// Usunięcie paddingu
-try {
-    const unpaddedBytes = removePKCS7Padding(paddedBytes);
-    console.log("Po usunięciu paddingu:", unpaddedBytes);
-    console.log("Długość po usunięciu paddingu:", unpaddedBytes.length);
-    
-    // Konwersja z powrotem na tekst
-    const decoder = new TextDecoder();
-    const resultText = decoder.decode(new Uint8Array(unpaddedBytes));
-    console.log("Tekst po deszyfracji:", resultText);
-    
-    if (resultText === testText) {
-        console.log("TEST PADDINGU: SUKCES");
-    } else {
-        console.log("TEST PADDINGU: BŁĄD - tekst nie zgadza się");
-    }
-} catch (e) {
-    console.error("TEST PADDINGU: BŁĄD podczas usuwania paddingu:", e);
-}
-
-// Dodaj ten kod na końcu funkcji DOMContentLoaded
-console.log("=== TESTY PADDINGU ===");
-
-// Test 1: Pusty tekst (0 bajtów)
-testPadding("", "Pusty tekst");
-
-// Test 2: Dokładnie 16 bajtów
-testPadding("1234567890123456", "Dokładnie 16 bajtów");
-
-// Test 3: Bardzo krótki tekst
-testPadding("a", "Jeden znak");
-
-// Test 4: Tekst z polskimi znakami
-testPadding("zażółć gęślą jaźń", "Polskie znaki");
-
-function testPadding(text: string | undefined, testName: string) {
-    console.log(`\n--- Test: ${testName} ---`);
-    console.log("Tekst testowy:", text);
-    
-    // Konwersja na bajty
-    const encoder = new TextEncoder();
-    const testBytes = Array.from(encoder.encode(text));
-    console.log("Bajty:", testBytes);
-    console.log("Długość:", testBytes.length);
-    
-    // Dodanie paddingu
-    const paddedBytes = addPKCS7Padding(testBytes);
-    console.log("Po paddingu:", paddedBytes);
-    console.log("Długość po paddingu:", paddedBytes.length);
-    console.log("Ostatni bajt (wartość paddingu):", paddedBytes[paddedBytes.length - 1]);
-    
-    // Usunięcie paddingu
-    try {
-        const unpaddedBytes = removePKCS7Padding(paddedBytes);
-        console.log("Po usunięciu paddingu:", unpaddedBytes);
-        console.log("Długość po usunięciu paddingu:", unpaddedBytes.length);
-        
-        // Konwersja z powrotem na tekst
-        const decoder = new TextDecoder();
-        const resultText = decoder.decode(new Uint8Array(unpaddedBytes));
-        console.log("Tekst po deszyfracji:", resultText);
-        
-        if (resultText === text) {
-            console.log("✅ TEST SUKCES");
-        } else {
-            console.log("❌ TEST BŁĄD - tekst nie zgadza się");
-        }
-    } catch (e) {
-        console.error("❌ TEST BŁĄD podczas usuwania paddingu:", e);
+        return new Uint8Array(decrypted);
     }
 }
