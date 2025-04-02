@@ -64,7 +64,7 @@ export function stateToBytes(state: number[][]): number[] {
 
 // Konwersja tablicy bajtów na State
 export function bytesToState(bytes: number[]): number[][] {
-    const state = Array(4).fill(0).map(() => Array(4).fill(0));
+    const state:number[][] = [[], [], [], []];
     for (let i = 0; i < 4; i++) {
         for (let j = 0; j < 4; j++) {
             state[j][i] = bytes[i * 4 + j];
@@ -173,20 +173,20 @@ export function decryptBlock(state: number[][], w: number[][], Nr: number): numb
 }
 // Główna funkcja szyfrująca - dodaj logi
 export async function encrypt(input: Uint8Array, key: string, keySize: number): Promise<Uint8Array> {
-    const inputBytes:number[] = Array.from(input)
-    
+   
     // Konwersja klucza z hex na bajty
     const keyBytes = hexToBytes(key);
     log('Klucz (bajty):', keyBytes);
+
+
+    //TODO: @Fellapp Sprawdzić czy to jest dobrze
+    const Nr = (keySize / 32) + 6;
     
     // Rozszerzenie klucza
     const w = keyExpansion(keyBytes, keySize);
-        
-    log('Dane po konwersji na bajty:', inputBytes);
-    log('Długość danych w bajtach:', inputBytes.length);
     
     // Dodanie paddingu PKCS7
-    const paddedInput = addPKCS7Padding(inputBytes);
+    const paddedInput = addPKCS7Padding(input);
     
     // Szyfrowanie bloków
     log('Liczba bloków do zaszyfrowania:', paddedInput.length / 16);
@@ -196,7 +196,7 @@ export async function encrypt(input: Uint8Array, key: string, keySize: number): 
         const block = paddedInput.slice(i, i + 16);
         log('Blok przed szyfrowaniem:', block);
         
-        const state = bytesToState(block);
+        const state = bytesToState(Array.from(block));
         const encryptedState = encryptBlock(state, w, Nr);
         const encryptedBlock = stateToBytes(encryptedState);
         

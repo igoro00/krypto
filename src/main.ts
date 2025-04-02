@@ -2,7 +2,7 @@ import { dragAndDrop } from './dragAndDrop';
 import { bytesToHex, generateKey } from './generateKey';
 import { encrypt, decrypt } from './aes';
 import './style.css';
-import { bufferToBase64, log } from './utils';
+import { base64ToBuffer, bufferToBase64, log } from './utils';
 
 function showLoading() {
     const loadingDiv = document.createElement('div');
@@ -112,37 +112,20 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Funkcja do konwersji danych binarnych na hex string
-    function binaryToHex(data: Uint8Array): string {
-        return Array.from(data)
-            .map(byte => byte.toString(16).padStart(2, '0'))
-            .join('');
-    }
-
-    // Funkcja do konwersji hex string na dane binarne
-    function hexToBinary(hex: string): Uint8Array {
-        const matches = hex.match(/.{1,2}/g) || [];
-        return new Uint8Array(matches.map(byte => parseInt(byte, 16)));
-    }
-
     // Funkcja do szyfrowania pliku
     async function encryptFile(file: File, key: string, keySize: number): Promise<Blob> {
         const arrayBuffer = await readFileAsArrayBuffer(file);
         const inputBytes = new Uint8Array(arrayBuffer);
-        const hexData = (inputBytes);
-        const encryptedHex = await encrypt(hexData, key, keySize);
-        const encryptedBytes = await (encryptedHex);
-        return new Blob([encryptedBytes], { type: 'application/octet-stream' });
+        const encrypted = await encrypt(inputBytes, key, keySize);
+        return new Blob([encrypted], { type: 'application/octet-stream' });
     }
 
     // Funkcja do deszyfrowania pliku
     async function decryptFile(file: File, key: string, keySize: number): Promise<Blob> {
         const arrayBuffer = await readFileAsArrayBuffer(file);
         const inputBytes = new Uint8Array(arrayBuffer);
-        const hexData = binaryToHex(inputBytes);
-        const decryptedHex = decrypt(hexData, key, keySize);
-        const decryptedBytes = hexToBinary(decryptedHex);
-        return new Blob([decryptedBytes], { type: file.type || 'application/octet-stream' });
+        const decrypted = decrypt(inputBytes, key, keySize);
+        return new Blob([decrypted], { type: file.type || 'application/octet-stream' });
     }
 
     // Obsługa generowania klucza
@@ -208,18 +191,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     log("Zaszyfrowano tekst");
                 } else {
                     // Dla deszyfrowania tekstu
-                    const decryptedHex = decrypt(inputData, currentKey, keyLength);
-                    try {
-                        const bytes = new Uint8Array(
-                            decryptedHex.match(/.{1,2}/g)?.map(byte => parseInt(byte, 16)) || []
-                        );
-                        const decoder = new TextDecoder('utf-8');
-                        result = decoder.decode(bytes);
-                        log("Odszyfrowano tekst");
-                    } catch (e) {
-                        result = decryptedHex;
-                        log("Odszyfrowano tekst (format hex)");
-                    }
+                    const bytes = decrypt(await base64ToBuffer(inputData), currentKey, keyLength);
+                    const decoder = new TextDecoder('utf-8');
+                    result = decoder.decode(bytes);
+                    log("Odszyfrowano tekst");
                 }
             
                 // Wyświetl wynik

@@ -10,11 +10,12 @@ export async function bufferToBase64(buffer: Uint8Array): Promise<string> {
 }
 
 //@ts-ignore
-export async function base64ToBuffer(b64:string): Promise<ArrayBuffer> {
+export async function base64ToBuffer(b64:string): Promise<Uint8Array> {
     var dataUrl = "data:application/octet-binary;base64," + b64;
 
     const res = await fetch(dataUrl)
-    return await res.arrayBuffer();        
+    const arrayBuffer = await res.arrayBuffer();
+    return new Uint8Array(arrayBuffer);        
 }
 
 export function log(...args: any[]) {
