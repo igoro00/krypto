@@ -4,6 +4,6 @@ import checker from "vite-plugin-checker"
 export default defineConfig({
   plugins: [
     tailwindcss(),
-    checker({terminal:true}),
+    checker({terminal:true, typescript: true}),
   ],
 })
