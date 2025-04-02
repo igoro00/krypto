@@ -2,7 +2,7 @@ import { SubWord } from './SubWord';
 import { RotWord } from './RotWord';
 import { Rcon } from './Rcon';
 
-export function KeyExpansion(key: number[], keySize: number): number[][] {
+export function keyExpansion(key: number[], keySize: number): number[][] {
   const Nk = keySize / 32; // liczba 32-bitowych słów w kluczu
   const Nr = Nk + 6;       // liczba rund
   const Nb = 4;            // stała dla AES

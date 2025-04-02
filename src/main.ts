@@ -1,6 +1,6 @@
 import { dragAndDrop } from './dragAndDrop';
 import { bytesToHex, generateKey } from './generateKey';
-import { encrypt, decrypt, hexToBytes } from './aes';
+import { encrypt, decrypt } from './aes';
 import './style.css';
 
 function showLoading() {
@@ -128,9 +128,9 @@ document.addEventListener('DOMContentLoaded', () => {
     async function encryptFile(file: File, key: string, keySize: number): Promise<Blob> {
         const arrayBuffer = await readFileAsArrayBuffer(file);
         const inputBytes = new Uint8Array(arrayBuffer);
-        const hexData = binaryToHex(inputBytes);
-        const encryptedHex = encrypt(hexData, key, keySize);
-        const encryptedBytes = hexToBinary(encryptedHex);
+        const hexData = (inputBytes);
+        const encryptedHex = await encrypt(hexData, key, keySize);
+        const encryptedBytes = await (encryptedHex);
         return new Blob([encryptedBytes], { type: 'application/octet-stream' });
     }
 
@@ -205,7 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const hexString = Array.from(uint8Array)
                         .map(b => b.toString(16).padStart(2, '0'))
                         .join('');
-                    result = encrypt(hexString, currentKey, keyLength);
+                    result = await encrypt(hexString, currentKey, keyLength);
                     console.log("Zaszyfrowano tekst");
                 } else {
                     // Dla deszyfrowania tekstu
@@ -270,4 +270,20 @@ document.addEventListener('DOMContentLoaded', () => {
             hideLoading();
         }
     });
+
+    // Testowanie paddingu dla krótkiego bloku
+    // const shortData = stringToBytes("test"); // 4 bajty
+    // console.log("Oryginalne dane:", shortData);
+    // const paddedData = addPKCS7Padding(shortData);
+    // console.log("Po dodaniu paddingu:", paddedData);
+    // console.log("Długość po paddingu:", paddedData.length);
+
+    // // Sprawdź czy padding jest poprawnie usuwany
+    // try {
+    //     const unpaddedData = removePKCS7Padding(paddedData);
+    //     console.log("Po usunięciu paddingu:", unpaddedData);
+    //     console.log("Długość po usunięciu paddingu:", unpaddedData.length);
+    // } catch (e) {
+    //     console.error("Błąd podczas usuwania paddingu:", e);
+    // }
 });
