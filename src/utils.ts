@@ -21,6 +21,6 @@ export async function base64ToBuffer(b64:string): Promise<Uint8Array> {
 export function log(...args: any[]) {
     const VERBOSE = true;
     if(VERBOSE){
-        log(...args);
+        console.log(...args);
     }
 }
