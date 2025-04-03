@@ -1,6 +1,6 @@
 import { dragAndDrop } from './dragAndDrop';
 import { bytesToHex, generateKey } from './generateKey';
-import { encrypt, decrypt } from './aes';
+import { encrypt, decrypt, hexToBytes } from './aes';
 import './style.css';
 import { base64ToBuffer, bufferToBase64, log } from './utils';
 
@@ -113,18 +113,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Funkcja do szyfrowania pliku
-    async function encryptFile(file: File, key: string, keySize: number): Promise<Blob> {
+    async function encryptFile(file: File, key: Uint8Array): Promise<Blob> {
         const arrayBuffer = await readFileAsArrayBuffer(file);
         const inputBytes = new Uint8Array(arrayBuffer);
-        const encrypted = await encrypt(inputBytes, key, keySize);
+        const encrypted = await encrypt(inputBytes, key);
         return new Blob([encrypted], { type: 'application/octet-stream' });
     }
 
     // Funkcja do deszyfrowania pliku
-    async function decryptFile(file: File, key: string, keySize: number): Promise<Blob> {
+    async function decryptFile(file: File, key: Uint8Array): Promise<Blob> {
         const arrayBuffer = await readFileAsArrayBuffer(file);
         const inputBytes = new Uint8Array(arrayBuffer);
-        const decrypted = decrypt(inputBytes, key, keySize);
+        const decrypted = decrypt(inputBytes, key);
         return new Blob([decrypted], { type: file.type || 'application/octet-stream' });
     }
 
@@ -150,7 +150,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const selectedRadioAction = document.querySelector<HTMLInputElement>('input[name="operation"]:checked');
         const dataType = document.querySelector<HTMLInputElement>('input[name="dataType"]:checked');
-        const selectedKeyLength = document.querySelector<HTMLInputElement>('input[name="keyLength"]:checked');
 
         const manualKeyValue = manualKey.value.trim();
         const generatedKeyValue = generatedKey.textContent?.trim();
@@ -168,10 +167,8 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error("Brak klucza!");
             return;
         }
-
+        const keyBytes = new Uint8Array(hexToBytes(currentKey));
         try {
-            const keyLength = parseInt(selectedKeyLength?.value || "128");
-
             if (dataType?.value === 'text') {
                 // Obsługa tekstu
                 const inputData = textInput.value;
@@ -186,12 +183,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Dla szyfrowania tekstu
                     const encoder = new TextEncoder();
                     const uint8Array = encoder.encode(inputData);
-                    const encrypted = await encrypt(uint8Array, currentKey, keyLength);
+                    const encrypted = await encrypt(uint8Array, keyBytes);
                     result = await bufferToBase64(encrypted);
                     log("Zaszyfrowano tekst");
                 } else {
                     // Dla deszyfrowania tekstu
-                    const bytes = decrypt(await base64ToBuffer(inputData), currentKey, keyLength);
+                    const bytes = decrypt(await base64ToBuffer(inputData), keyBytes);
                     const decoder = new TextDecoder('utf-8');
                     result = decoder.decode(bytes);
                     log("Odszyfrowano tekst");
@@ -214,10 +211,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 let resultBlob: Blob;
 
                 if (selectedRadioAction?.value === 'encrypt') {
-                    resultBlob = await encryptFile(file, currentKey, keyLength);
+                    resultBlob = await encryptFile(file, keyBytes);
                     log("Zaszyfrowano plik");
                 } else {
-                    resultBlob = await decryptFile(file, currentKey, keyLength);
+                    resultBlob = await decryptFile(file, keyBytes);
                     log("Odszyfrowano plik");
                 }
 
@@ -243,7 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (error) {
             console.error("Błąd podczas operacji:", error);
-            alert("Wystąpił błąd podczas operacji szyfrowania/deszyfrowania!");
+            alert("Niepoprawny format pliku");
         } finally {
             hideLoading();
         }

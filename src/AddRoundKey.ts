@@ -1,10 +1,11 @@
-export function AddRoundKey(state: number[][], roundKey: number[][]): number[][] {
+
+
+
+
+export function AddRoundKey(state: Uint8Array, roundKey: Uint8Array): Uint8Array {
   // Wykonujemy operację XOR między każdym bajtem stanu i odpowiadającym bajtem klucza rundowego
-  for (let i = 0; i < 4; i++) {
-    for (let j = 0; j < 4; j++) {
-      state[i][j] ^= roundKey[i][j];
-    }
+  for (let i = 0; i < 16; i++) {
+    state[i] ^= roundKey[i];
   }
-  
   return state;
 }
