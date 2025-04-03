@@ -2,6 +2,7 @@ import { dragAndDrop } from './dragAndDrop';
 import { bytesToHex, generateKey } from './generateKey';
 import { encrypt, decrypt, hexToBytes } from './aes';
 import './style.css';
+import { base64ToBuffer, bufferToBase64, log } from './utils';
 
 function showLoading() {
     const loadingDiv = document.createElement('div');
@@ -55,7 +56,7 @@ function hideLoading() {
 dragAndDrop();
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("Site Loaded");
+    log("Site Loaded");
     
     // Pobieranie elementów DOM
     const action = document.getElementById('action');
@@ -111,37 +112,20 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Funkcja do konwersji danych binarnych na hex string
-    function binaryToHex(data: Uint8Array): string {
-        return Array.from(data)
-            .map(byte => byte.toString(16).padStart(2, '0'))
-            .join('');
-    }
-
-    // Funkcja do konwersji hex string na dane binarne
-    function hexToBinary(hex: string): Uint8Array {
-        const matches = hex.match(/.{1,2}/g) || [];
-        return new Uint8Array(matches.map(byte => parseInt(byte, 16)));
-    }
-
     // Funkcja do szyfrowania pliku
-    async function encryptFile(file: File, key: string, keySize: number): Promise<Blob> {
+    async function encryptFile(file: File, key: Uint8Array): Promise<Blob> {
         const arrayBuffer = await readFileAsArrayBuffer(file);
         const inputBytes = new Uint8Array(arrayBuffer);
-        const hexData = binaryToHex(inputBytes);
-        const encryptedHex = encrypt(hexData, key, keySize);
-        const encryptedBytes = hexToBinary(encryptedHex);
-        return new Blob([encryptedBytes], { type: 'application/octet-stream' });
+        const encrypted = await encrypt(inputBytes, key);
+        return new Blob([encrypted], { type: 'application/octet-stream' });
     }
 
     // Funkcja do deszyfrowania pliku
-    async function decryptFile(file: File, key: string, keySize: number): Promise<Blob> {
+    async function decryptFile(file: File, key: Uint8Array): Promise<Blob> {
         const arrayBuffer = await readFileAsArrayBuffer(file);
         const inputBytes = new Uint8Array(arrayBuffer);
-        const hexData = binaryToHex(inputBytes);
-        const decryptedHex = decrypt(hexData, key, keySize);
-        const decryptedBytes = hexToBinary(decryptedHex);
-        return new Blob([decryptedBytes], { type: file.type || 'application/octet-stream' });
+        const decrypted = decrypt(inputBytes, key);
+        return new Blob([decrypted], { type: file.type || 'application/octet-stream' });
     }
 
     // Obsługa generowania klucza
@@ -151,13 +135,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     generatedKeyButton.addEventListener('click', () => {
-        console.log("Generating key...");
+        log("Generating key...");
         const selectedRadio = document.querySelector<HTMLInputElement>('input[name="keyLength"]:checked');
         if (selectedRadio) {
             const keyLength = parseInt(selectedRadio.value);
             const generatedKeyValue = generateKey(keyLength);
             generatedKey.textContent = bytesToHex(generatedKeyValue);
-            console.log("Wygenerowano klucz:", generatedKey.textContent + "\ndługość klucza: " + keyLength);
+            log("Wygenerowano klucz:", generatedKey.textContent + "\ndługość klucza: " + keyLength);
         }
     });
 
@@ -166,7 +150,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const selectedRadioAction = document.querySelector<HTMLInputElement>('input[name="operation"]:checked');
         const dataType = document.querySelector<HTMLInputElement>('input[name="dataType"]:checked');
-        const selectedKeyLength = document.querySelector<HTMLInputElement>('input[name="keyLength"]:checked');
 
         const manualKeyValue = manualKey.value.trim();
         const generatedKeyValue = generatedKey.textContent?.trim();
@@ -174,20 +157,18 @@ document.addEventListener('DOMContentLoaded', () => {
         let currentKey: string | null = null;
         if (manualKeyValue) {
             currentKey = manualKeyValue;
-            console.log("Używany klucz ręczny:", currentKey);
+            log("Używany klucz ręczny:", currentKey);
         } else if (generatedKeyValue && generatedKeyValue !== "brak") {
             currentKey = generatedKeyValue;
-            console.log("Używany wygenerowany klucz:", currentKey);
+            log("Używany wygenerowany klucz:", currentKey);
         } else {
             hideLoading();
             alert("Brak klucza! Wprowadź klucz ręcznie lub wygeneruj nowy.");
             console.error("Brak klucza!");
             return;
         }
-
+        const keyBytes = new Uint8Array(hexToBytes(currentKey));
         try {
-            const keyLength = parseInt(selectedKeyLength?.value || "128");
-
             if (dataType?.value === 'text') {
                 // Obsługa tekstu
                 const inputData = textInput.value;
@@ -202,25 +183,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Dla szyfrowania tekstu
                     const encoder = new TextEncoder();
                     const uint8Array = encoder.encode(inputData);
-                    const hexString = Array.from(uint8Array)
-                        .map(b => b.toString(16).padStart(2, '0'))
-                        .join('');
-                    result = encrypt(hexString, currentKey, keyLength);
-                    console.log("Zaszyfrowano tekst");
+                    const encrypted = await encrypt(uint8Array, keyBytes);
+                    result = await bufferToBase64(encrypted);
+                    log("Zaszyfrowano tekst");
                 } else {
                     // Dla deszyfrowania tekstu
-                    const decryptedHex = decrypt(inputData, currentKey, keyLength);
-                    try {
-                        const bytes = new Uint8Array(
-                            decryptedHex.match(/.{1,2}/g)?.map(byte => parseInt(byte, 16)) || []
-                        );
-                        const decoder = new TextDecoder('utf-8');
-                        result = decoder.decode(bytes);
-                        console.log("Odszyfrowano tekst");
-                    } catch (e) {
-                        result = decryptedHex;
-                        console.log("Odszyfrowano tekst (format hex)");
-                    }
+                    const bytes = decrypt(await base64ToBuffer(inputData), keyBytes);
+                    const decoder = new TextDecoder('utf-8');
+                    result = decoder.decode(bytes);
+                    log("Odszyfrowano tekst");
                 }
             
                 // Wyświetl wynik
@@ -240,18 +211,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 let resultBlob: Blob;
 
                 if (selectedRadioAction?.value === 'encrypt') {
-                    resultBlob = await encryptFile(file, currentKey, keyLength);
-                    console.log("Zaszyfrowano plik");
+                    resultBlob = await encryptFile(file, keyBytes);
+                    log("Zaszyfrowano plik");
                 } else {
-                    resultBlob = await decryptFile(file, currentKey, keyLength);
-                    console.log("Odszyfrowano plik");
+                    resultBlob = await decryptFile(file, keyBytes);
+                    log("Odszyfrowano plik");
                 }
 
                 // Pobierz plik
                 const a = document.createElement('a');
                 const url = window.URL.createObjectURL(resultBlob);
                 a.href = url;
-                a.download = file.name + (selectedRadioAction?.value === 'encrypt' ? '.enc' : '.dec');
+                if (selectedRadioAction?.value === 'encrypt') {
+                    a.download = file.name + '.enc';
+                } else {
+                    a.download = file.name.replace('.enc', '');
+                }
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
@@ -265,9 +240,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (error) {
             console.error("Błąd podczas operacji:", error);
-            alert("Wystąpił błąd podczas operacji szyfrowania/deszyfrowania!");
+            alert("Niepoprawny format pliku");
         } finally {
             hideLoading();
         }
     });
+
+    // Testowanie paddingu dla krótkiego bloku
+    // const shortData = stringToBytes("test"); // 4 bajty
+    // log("Oryginalne dane:", shortData);
+    // const paddedData = addPKCS7Padding(shortData);
+    // log("Po dodaniu paddingu:", paddedData);
+    // log("Długość po paddingu:", paddedData.length);
+
+    // // Sprawdź czy padding jest poprawnie usuwany
+    // try {
+    //     const unpaddedData = removePKCS7Padding(paddedData);
+    //     log("Po usunięciu paddingu:", unpaddedData);
+    //     log("Długość po usunięciu paddingu:", unpaddedData.length);
+    // } catch (e) {
+    //     console.error("Błąd podczas usuwania paddingu:", e);
+    // }
 });
