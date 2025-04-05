@@ -4,58 +4,52 @@ import { encrypt, decrypt, hexToBytes } from './aes';
 import './style.css';
 import { base64ToBuffer, bufferToBase64, log } from './utils';
 
-function showLoading() {
-    const loadingDiv = document.createElement('div');
-    loadingDiv.id = 'loading';
-    loadingDiv.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.5);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 9999;
-    `;
+const selectedRadioAction = document.querySelector<HTMLInputElement>('input[name="operation"]:checked');
+let currentFileName = '';
 
-    const loadingImg = document.createElement('img');
-    loadingImg.src = 'loading.gif';
-    loadingImg.alt = 'Loading...';
-    loadingImg.style.cssText = `
-        width: 100px;
-        height: 100px;
-    `;
-
-    const loadingText = document.createElement('div');
-    loadingText.textContent = 'Proszę czekać...';
-    loadingText.style.cssText = `
-        color: white;
-        font-size: 18px;
-        margin-top: 10px;
-        text-align: center;
-    `;
-
-    const container = document.createElement('div');
-    container.style.textAlign = 'center';
-    container.appendChild(loadingImg);
-    container.appendChild(loadingText);
-    loadingDiv.appendChild(container);
-
-    document.body.appendChild(loadingDiv);
+if (!window.Worker) {
+    alert("To nie zadziała- worker!");    
+    throw new Error("Worker nie działa");
 }
 
-function hideLoading() {
-    const loadingDiv = document.getElementById('loading');
-    if (loadingDiv) {
-        document.body.removeChild(loadingDiv);
+const myWorker = new Worker(new URL("worker.js", import.meta.url), { type: "module" });
+myWorker.onmessage = (e) => {
+    const encrypted = e.data; 
+    let resultBlob = new Blob([encrypted], { type: 'application/octet-stream' });
+    const a = document.createElement('a');
+    const url = window.URL.createObjectURL(resultBlob);
+    a.href = url;
+
+    if (selectedRadioAction?.value === 'encrypt') {
+        a.download = currentFileName + '.enc';
+    } else {
+        a.download = currentFileName.replace('.enc', '');
+    }
+
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+
+    setLoading(false);
+};
+
+function setLoading(value: boolean) {
+    const loading = document.querySelector('.loading');
+    if (value) {
+        loading?.classList.remove('hidden');
+    } else {
+        loading?.classList.add('hidden');
     }
 }
 
 dragAndDrop();
 
 document.addEventListener('DOMContentLoaded', () => {
+    document.body.addEventListener('click', ()=> {
+        console.log("BODY");
+        
+    })
     log("Site Loaded");
     
     // Pobieranie elementów DOM
@@ -113,19 +107,31 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Funkcja do szyfrowania pliku
-    async function encryptFile(file: File, key: Uint8Array): Promise<Blob> {
+    async function encryptFile(file: File, key: Uint8Array){
         const arrayBuffer = await readFileAsArrayBuffer(file);
         const inputBytes = new Uint8Array(arrayBuffer);
-        const encrypted = await encrypt(inputBytes, key);
-        return new Blob([encrypted], { type: 'application/octet-stream' });
+        // const encrypted = await encrypt(inputBytes, key);
+        myWorker.postMessage({
+            action: 'encrypt',
+            data: inputBytes,
+            key: key
+        });
+
+        return;
     }
 
     // Funkcja do deszyfrowania pliku
-    async function decryptFile(file: File, key: Uint8Array): Promise<Blob> {
+    async function decryptFile(file: File, key: Uint8Array) {
         const arrayBuffer = await readFileAsArrayBuffer(file);
         const inputBytes = new Uint8Array(arrayBuffer);
-        const decrypted = decrypt(inputBytes, key);
-        return new Blob([decrypted], { type: file.type || 'application/octet-stream' });
+        // const decrypted = decrypt(inputBytes, key);
+        myWorker.postMessage({
+            action: 'decrypt',
+            data: inputBytes,
+            key: key
+        });
+
+        return;
     }
 
     // Obsługa generowania klucza
@@ -146,9 +152,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     action?.addEventListener('click', async () => {
-        showLoading();
+        setLoading(true)
 
-        const selectedRadioAction = document.querySelector<HTMLInputElement>('input[name="operation"]:checked');
         const dataType = document.querySelector<HTMLInputElement>('input[name="dataType"]:checked');
 
         const manualKeyValue = manualKey.value.trim();
@@ -162,7 +167,8 @@ document.addEventListener('DOMContentLoaded', () => {
             currentKey = generatedKeyValue;
             log("Używany wygenerowany klucz:", currentKey);
         } else {
-            hideLoading();
+            setLoading(false)
+
             alert("Brak klucza! Wprowadź klucz ręcznie lub wygeneruj nowy.");
             console.error("Brak klucza!");
             return;
@@ -173,7 +179,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Obsługa tekstu
                 const inputData = textInput.value;
                 if (!inputData) {
-                    hideLoading();
+                    setLoading(false)
+
                     alert("Wprowadź tekst do przetworzenia!");
                     return;
                 }
@@ -208,32 +215,19 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (dataType?.value === 'file' && fileInput.files && fileInput.files[0]) {
                 // Obsługa pliku
                 const file = fileInput.files[0];
-                let resultBlob: Blob;
+                currentFileName = file.name;
 
                 if (selectedRadioAction?.value === 'encrypt') {
-                    resultBlob = await encryptFile(file, keyBytes);
+                    await encryptFile(file, keyBytes);
                     log("Zaszyfrowano plik");
                 } else {
-                    resultBlob = await decryptFile(file, keyBytes);
+                    await decryptFile(file, keyBytes);
                     log("Odszyfrowano plik");
                 }
 
-                // Pobierz plik
-                const a = document.createElement('a');
-                const url = window.URL.createObjectURL(resultBlob);
-                a.href = url;
-                if (selectedRadioAction?.value === 'encrypt') {
-                    a.download = file.name + '.enc';
-                } else {
-                    a.download = file.name.replace('.enc', '');
-                }
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                window.URL.revokeObjectURL(url);
-
             } else {
-                hideLoading();
+                setLoading(false)
+
                 alert("Wybierz plik lub wprowadź tekst!");
                 return;
             }
@@ -241,24 +235,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error("Błąd podczas operacji:", error);
             alert("Niepoprawny format pliku");
-        } finally {
-            hideLoading();
         }
     });
-
-    // Testowanie paddingu dla krótkiego bloku
-    // const shortData = stringToBytes("test"); // 4 bajty
-    // log("Oryginalne dane:", shortData);
-    // const paddedData = addPKCS7Padding(shortData);
-    // log("Po dodaniu paddingu:", paddedData);
-    // log("Długość po paddingu:", paddedData.length);
-
-    // // Sprawdź czy padding jest poprawnie usuwany
-    // try {
-    //     const unpaddedData = removePKCS7Padding(paddedData);
-    //     log("Po usunięciu paddingu:", unpaddedData);
-    //     log("Długość po usunięciu paddingu:", unpaddedData.length);
-    // } catch (e) {
-    //     console.error("Błąd podczas usuwania paddingu:", e);
-    // }
 });

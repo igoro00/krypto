@@ -151,9 +151,7 @@ label {
     text-align: center;
 }
 
-.hidden {
-    display: none;
-}
+
 
 #textInput {
     padding: 10px;
@@ -168,4 +166,34 @@ label {
     resize: none;
     min-height: 600px;
     box-sizing: border-box;
+}
+
+.loading {
+    position: fixed;
+    flex-direction: column;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+#loadingImg {
+    width: 100px;
+    height: 100px;
+}
+
+#loadingText {
+    color: white;
+    font-size: 18px;
+    margin-top: 10px;
+    text-align: center;
+}
+
+.hidden {
+    display: none;
 }
