@@ -1,6 +1,5 @@
 import { galoisMul } from "./utils";
 
-// TODO: Sprawdzić czy da się to zrobić bez tworzenia pamięci
 export function MixColumns(state: Uint8Array): Uint8Array {
     const result = new Uint8Array(16);
     

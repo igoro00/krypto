@@ -1,11 +1,9 @@
 export async function bufferToBase64(buffer: Uint8Array): Promise<string> {
-    // use a FileReader to generate a base64 data URI:
     const base64url = await new Promise<string>(r => {
       const reader = new FileReader()
       reader.onload = () => r(reader.result as string)
       reader.readAsDataURL(new Blob([buffer]))
     });
-    // remove the `data:...;base64,` part from the start
     return base64url.slice(base64url.indexOf(',') + 1);
 }
 
@@ -56,7 +54,6 @@ export function log(...args: any[]) {
 export function galoisMul(a: number, b: number): number {
     let result = 0;
     
-    // Dla wartości 1, 2, 3 możemy użyć poprzedniej implementacji
     if (a === 1) return b;
     if (a === 2) {
       let temp = b << 1;
@@ -65,15 +62,15 @@ export function galoisMul(a: number, b: number): number {
     }
     if (a === 3) return galoisMul(2, b) ^ b;
     
-    // Dla większych wartości (0x09, 0x0b, 0x0d, 0x0e) używamy rozkładu na potęgi 2
+    // dla większych wartości (0x09, 0x0b, 0x0d, 0x0e) używamy rozkładu na potęgi 2
     let temp = b;
-    // Mnożymy przez 2 odpowiednią liczbę razy i sumujemy wyniki
+    // mnożymy przez 2 odpowiednią liczbę razy i sumujemy wyniki
     for (let i = 0; i < 8; i++) {
       if ((a & (1 << i)) !== 0) {
         result ^= temp;
       }
       
-      // Przygotowujemy następną potęgę 2 * temp
+      // przygotowujemy następną potęgę 2 * temp
       const highBit = (temp & 0x80);
       temp <<= 1;
       if (highBit !== 0) {

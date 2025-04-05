@@ -1,15 +1,15 @@
 import { shiftLeft, shiftRight, switchHalves } from "./utils";
 
 export function ShiftRows(input: Uint8Array): Uint8Array { 
-    // Pierwszy wiersz pozostaje bez zmian
+    // pierwszy wiersz pozostaje bez zmian
     
-    // Drugi wiersz - przesunięcie o 1 w lewo (ROL 1)
+    // drugi wiersz - przesunięcie o 1 w lewo 
     shiftLeft(input.subarray(4,8)); // shift left
     
-    // Trzeci wiersz - przesunięcie o 2 w lewo (ROL 2)
+    // trzeci wiersz - przesunięcie o 2 w lewo 
     switchHalves(input.subarray(8,12)); //zamien polowki
     
-    // Czwarty wiersz - przesunięcie o 3 w lewo (ROL 3)
+    // czwarty wiersz - przesunięcie o 3 w lewo 
     shiftRight(input.subarray(12,16)); // shift right
     
     return input;

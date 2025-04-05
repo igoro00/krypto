@@ -7,10 +7,10 @@ export function keyExpansion(key: Uint8Array): Uint8Array {
   const Nr = Nk + 6;       // liczba rund
   const Nb = 4;            // stała dla AES
 
-  // Tablica na rozszerzony klucz
+  // tablica na rozszerzony klucz
   const w: number[][] = new Array(Nb * (Nr + 1));
   
-  // Konwersja klucza na słowa
+  // konwersja klucza na słowa
   for (let i = 0; i < Nk; i++) {
       w[i] = [
           key[4 * i],

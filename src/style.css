@@ -70,7 +70,6 @@ header {
 
 .drop-zone i {
     font-size: 48px;
-    /* color: #3c7cc6; */
     margin-bottom: 10px;
 }
 
@@ -89,9 +88,7 @@ header {
 }
 
 button {
-    /* background: #f8f9fa; */
     background: var(--color-gray-700);
-    /* color: black; */
     font-weight: 500;
     border: 2px solid var(--color-gray-600);
     padding: 13px;
@@ -116,7 +113,6 @@ main {
 }
 
 .text {
-    @apply lg:flex-1;
     height: 600px;
 }
 
@@ -151,14 +147,10 @@ label {
     text-align: center;
 }
 
-
-
 #textInput {
     padding: 10px;
     text-align: left;
-    /* background: #f8f9fa; */
     background: var(--color-gray-700);
-    /* color: white; */
     font-weight: 500;
     border: 2px solid var(--color-gray-600);
     width: 100%;
