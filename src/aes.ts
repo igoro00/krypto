@@ -9,43 +9,6 @@ import { keyExpansion } from './KeyExpansion';
 import { log } from './utils';
 
 /**
- * Konwertuje string na tablicę bajtów
- * @param str - String do konwersji (może być zwykłym tekstem lub hex)
- * @returns Tablica bajtów
- */
-export function stringToBytes(str: string): number[] {
-    if (str.match(/^[0-9a-fA-F]+$/)) {
-        // Jeśli string zawiera tylko znaki hex, konwertuj bezpośrednio
-        return hexToBytes(str);
-    } else {
-        // Dla zwykłego tekstu użyj TextEncoder (obsługuje polskie znaki)
-        const encoder = new TextEncoder();
-        return Array.from(encoder.encode(str));
-    }
-}
-
-/**
- * Konwertuje tablicę bajtów na string
- * @param bytes - Tablica bajtów do konwersji
- * @returns String (UTF-8 jeśli możliwe, w przeciwnym razie hex)
- */
-export function bytesToString(bytes: number[]): string {
-    try {
-        // Próba dekodowania jako UTF-8
-        const decoder = new TextDecoder('utf-8');
-        const text = decoder.decode(new Uint8Array(bytes));
-        // Sprawdzenie czy tekst zawiera czytelne znaki
-        if (text.match(/^[\x20-\x7E\u00A0-\uFFFF]+$/)) {
-            return text;
-        }
-        throw new Error('Not a valid text');
-    } catch (e) {
-        // Jeśli dekodowanie się nie udało, zwróć reprezentację hex
-        return bytes.map(b => b.toString(16).padStart(2, '0')).join('');
-    }
-}
-
-/**
  * Konwertuje string hex na tablicę bajtów
  * @param hex - String w formacie hex (np. "1a2b3c")
  * @returns Tablica bajtów
@@ -57,31 +20,6 @@ export function hexToBytes(hex: string): number[] {
         bytes.push(parseInt(hex.substr(i, 2), 16));
     }
     return bytes;
-}
-
-/**
- * Konwertuje tablicę bajtów na string hex
- * @param bytes - Tablica bajtów
- * @returns String w formacie hex
- */
-export function bytesToHex(bytes: number[]): string {
-    return bytes.map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-/**
- * Konwertuje stan AES (4x4) na tablicę bajtów
- * @param state - Stan AES jako tablica 4x4
- * @returns Tablica bajtów (16 elementów)
- */
-export function stateToBytes(state: number[][]): number[] {
-    const result = [];
-    // Konwersja kolumnami (format AES)
-    for (let i = 0; i < 4; i++) {
-        for (let j = 0; j < 4; j++) {
-            result.push(state[j][i]);
-        }
-    }
-    return result;
 }
 
 /**
@@ -303,8 +241,7 @@ export function decrypt(inputBytes: Uint8Array, keyBytes: Uint8Array, progressCB
         // Raportuj postęp
         if (progressCB && (i % 2048 == 0)) {
             progressCB(i, inputBytes.length);
-        }
-        
+        }   
     }
     
     try {
