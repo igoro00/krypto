@@ -112,9 +112,10 @@ export function galoisMul(a: number, b: number): number {
     // Optymalizacja częstych przypadków w AES
     if (a === 1) return b;
     if (a === 2) {
-      let temp = b << 1;
-      if ((b & 0x80) !== 0) temp ^= 0x1b; // Modulo x^8 + x^4 + x^3 + x + 1
-      return temp & 0xff; // Maskowanie do bajta
+      let temp = b << 1; // Przesunięcie bitowe w lewo (mnożenie przez 2)
+      if ((b & 0x80) !== 0) // Jeśli najstarszy bit = 1 (przekroczenie GF(2⁸)?)
+        temp ^= 0x1b; // Modulo x^8 + x^4 + x^3 + x + 1
+      return temp & 0xff; // Maskowanie do bajta (AND),  obcina wszystko poza ostatnimi 8 bitami
     }
     if (a === 3) return galoisMul(2, b) ^ b;  // 3*b = (2*b) XOR b
     
