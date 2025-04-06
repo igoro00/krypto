@@ -8,46 +8,61 @@ let selectedRadioAction:HTMLInputElement|null;
 let currentFileName = '';
 const loadingText = document.querySelector('#loadingText');
 const generatedKey = document.getElementById('key');
+
+// Resetowanie wyświetlanego klucza przy zmianie długości
 if (generatedKey) {
     document.querySelectorAll('input[name="keyLength"]').forEach(elem=>elem.addEventListener("change", ()=>generatedKey.textContent=''));
 }
 
+// Sprawdzenie wsparcia dla Web Workers
 if (!window.Worker) {
     alert("To nie zadziała- worker!");    
     throw new Error("Worker nie działa");
 }
 
+// Inicjalizacja Web Worker do cięższych operacji
 const myWorker = new Worker(new URL("worker.js", import.meta.url), { type: "module" });
+
+// Obsługa wiadomości od Worker'a
 myWorker.onmessage = (e) => {
     if (e.data.type === 'progress') {
+        // Aktualizacja postępu operacji
         if (loadingText) {
             loadingText.innerHTML = e.data.data;
         }
 
     } else {
+        // Zakończenie operacji - przygotowanie pliku do pobrania
         const encrypted = e.data.data; 
         let resultBlob = new Blob([encrypted], { type: 'application/octet-stream' });
         
+        // Tworzenie linku do pobrania
         const a = document.createElement('a');
         const url = window.URL.createObjectURL(resultBlob);
         a.href = url;
     
+        // Ustalenie nazwy pliku wynikowego
         selectedRadioAction = document.querySelector<HTMLInputElement>('input[name="operation"]:checked');
         if (selectedRadioAction?.value === 'encrypt') {
-            a.download = currentFileName + '_enc';
+            a.download = currentFileName + '_enc'; // Dodanie suffixu dla zaszyfrowanego pliku
         } else {
-            a.download = currentFileName.replace('_enc', '');
+            a.download = currentFileName.replace('_enc', ''); // Usunięcie suffixu przy deszyfrowaniu
         }
     
+        // Automatyczne pobranie pliku
         document.body.appendChild(a); 
         a.click();
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
     
-        setLoading(false);
+        setLoading(false); // Ukrycie animacji ładowania
     }
 };
 
+/**
+ * Pokazuje/ukrywa animację ładowania
+ * @param value - true = pokaż, false = ukryj
+ */
 function setLoading(value: boolean) {
     const loading = document.querySelector('.loading');
     if (value) {
@@ -72,6 +87,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const dropZone = document.querySelector('.drop-zone');
     const textInputContainer = document.querySelector('.text');
 
+     /**
+     * Aktualizuje widoczność elementów w zależności od wybranego typu danych
+     */
     function updateVisibility() {
         const dataType = document.querySelector<HTMLInputElement>('input[name="dataType"]:checked');
 
@@ -92,6 +110,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     updateVisibility();
 
+     /**
+     * Czyta plik jako ArrayBuffer
+     * @param file - Plik do odczytu
+     * @returns Promise z ArrayBuffer
+     */
     function readFileAsArrayBuffer(file: File): Promise<ArrayBuffer> {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -107,6 +130,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+      /**
+     * Szyfruje plik przy użyciu Worker'a
+     * @param file - Plik do zaszyfrowania
+     * @param key - Klucz szyfrowania
+     */
     async function encryptFile(file: File, key: Uint8Array){
         const arrayBuffer = await readFileAsArrayBuffer(file);
         const inputBytes = new Uint8Array(arrayBuffer);
@@ -118,6 +146,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         return;
     }
+
+    /**
+     * Deszyfruje plik przy użyciu Worker'a
+     * @param file - Plik do odszyfrowania
+     * @param key - Klucz deszyfrowania
+     */
 
     async function decryptFile(file: File, key: Uint8Array) {
         const arrayBuffer = await readFileAsArrayBuffer(file);
@@ -176,8 +210,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const keyBytes = new Uint8Array(hexToBytes(currentKey));
         try {
             selectedRadioAction = document.querySelector<HTMLInputElement>('input[name="operation"]:checked');
+            // Obsługa operacji na tekście
             if (dataType?.value === 'text') {
-                // obsługa tekstu
                 const inputData = textInput.value;
                 if (!inputData) {
                     setLoading(false)
@@ -188,14 +222,14 @@ document.addEventListener('DOMContentLoaded', () => {
             
                 let result: string;
                 if (selectedRadioAction?.value === 'encrypt') {
-                    // dla szyfrowania tekstu
+                    // Szyfrowanie tekstu
                     const encoder = new TextEncoder();
                     const uint8Array = encoder.encode(inputData);
                     const encrypted = await encrypt(uint8Array, keyBytes);
                     result = await bufferToBase64(encrypted);
                     log("Zaszyfrowano tekst");
                 } else {
-                    // dla deszyfrowania tekstu
+                    // Deszyfrowanie tekstu
                     const bytes = decrypt(await base64ToBuffer(inputData), keyBytes);
                     const decoder = new TextDecoder('utf-8');
                     result = decoder.decode(bytes);
@@ -214,6 +248,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
                 setLoading(false);
 
+                // Obsługa operacji na plikach
             } else if (dataType?.value === 'file' && fileInput.files && fileInput.files[0]) {
                 const file = fileInput.files[0];
                 currentFileName = file.name;
