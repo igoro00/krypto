@@ -1,5 +1,3 @@
-// src/elgamal.ts
-
 export type ElGamalKeys = {
   p: bigint;
   g: bigint;
@@ -35,7 +33,6 @@ function modInv(a: bigint, m: bigint): bigint {
   return ((x % m) + m) % m;
 }
 
-// Prosty test pierwszości (Miller-Rabin dla małych liczb)
 function isPrime(n: bigint): boolean {
   if (n < 2n) return false;
   if (n === 2n || n === 3n) return true;
@@ -64,7 +61,6 @@ function isPrime(n: bigint): boolean {
   return true;
 }
 
-// Generowanie losowej liczby pierwszej o zadanej liczbie bitów
 export function generatePrime(bits: number): bigint {
   while (true) {
     let n =
@@ -76,7 +72,6 @@ export function generatePrime(bits: number): bigint {
   }
 }
 
-// Generowanie kluczy ElGamala
 export function generateKeys(bits = 32): ElGamalKeys {
   const p = generatePrime(bits);
   let g = 2n;
@@ -86,19 +81,26 @@ export function generateKeys(bits = 32): ElGamalKeys {
   return { p, g, x, y };
 }
 
-// Hashowanie wiadomości (prosty hash: suma kodów znaków)
-export function hashMessage(msg: string): bigint {
-  let hash = 0n;
-  for (let i = 0; i < msg.length; i++) {
-    hash = (hash * 31n + BigInt(msg.charCodeAt(i))) % 1000000007n;
-  }
-  return hash;
+// SHA-256 hash, zwraca BigInt
+export async function hashMessage(msg: string): Promise<bigint> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(msg);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  return BigInt(
+    "0x" +
+      Array.from(new Uint8Array(hashBuffer))
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("")
+  );
 }
 
-// Tworzenie podpisu
-export function sign(msg: string, keys: ElGamalKeys): ElGamalSignature {
+// Asynchroniczne podpisywanie
+export async function sign(
+  msg: string,
+  keys: ElGamalKeys
+): Promise<ElGamalSignature> {
   const { p, g, x } = keys;
-  const h = hashMessage(msg);
+  const h = await hashMessage(msg);
   let k: bigint;
   do {
     k = 2n + BigInt(Math.floor(Math.random() * Number(p - 3n)));
@@ -109,16 +111,16 @@ export function sign(msg: string, keys: ElGamalKeys): ElGamalSignature {
   return { r, s: (s + (p - 1n)) % (p - 1n) };
 }
 
-// Weryfikacja podpisu
-export function verify(
+// Asynchroniczna weryfikacja
+export async function verify(
   msg: string,
   sig: ElGamalSignature,
   keys: ElGamalKeys
-): boolean {
+): Promise<boolean> {
   const { p, g, y } = keys;
   const { r, s } = sig;
   if (r <= 0n || r >= p) return false;
-  const h = hashMessage(msg);
+  const h = await hashMessage(msg);
   const v1 = (modPow(y, r, p) * modPow(r, s, p)) % p;
   const v2 = modPow(g, h, p);
   return v1 === v2;

@@ -9,23 +9,25 @@
   <body>
     <h1>Podpis cyfrowy ElGamala</h1>
     <div class="container">
-      <label for="msg">Dane do podpisania:</label>
-      <textarea id="msg" rows="4" cols="50"></textarea>
-      <br />
+      <h2>Podpisywanie pliku</h2>
       <input type="file" id="file" />
       <br />
-      <button id="gen-keys">Generuj klucze</button>
-      <button id="sign">Podpisz</button>
-      <button id="verify">Weryfikuj</button>
+      <button id="sign">Podpisz plik</button>
+      <button id="download-signedfile" style="display: none">
+        Pobierz plik z podpisem
+      </button>
+      <button id="download-publickey" style="display: none">
+        Pobierz klucz publiczny
+      </button>
       <div id="message"></div>
-      <h2>Klucze</h2>
-      <div>p: <span id="p"></span></div>
-      <div>g: <span id="g"></span></div>
-      <div>x (prywatny): <span id="x"></span></div>
-      <div>y (publiczny): <span id="y"></span></div>
-      <h2>Podpis</h2>
-      <div>r: <span id="r"></span></div>
-      <div>s: <span id="s"></span></div>
+
+      <h2>Weryfikacja podpisu</h2>
+      <label>Plik z danymi i podpisem:</label>
+      <input type="file" id="verify-signedfile" /><br />
+      <label>Plik z kluczem publicznym:</label>
+      <input type="file" id="verify-publickey" /><br />
+      <button id="verify">Weryfikuj podpis</button>
+      <div id="verify-result"></div>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
