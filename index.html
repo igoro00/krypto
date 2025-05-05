@@ -8,7 +8,12 @@
 		<title>Kryptografia</title>
 	</head>
 	<body class="bg-gray-900">
-		<script type="module" src="/src/main.ts"></script>
+		<div class="hidden loading">
+			<img id="loadingImg" src="loading.gif" alt="">
+			<div id="loadingText">
+				Proszę czekać...
+			</div>
+		</div>
 		<header class="flex-col lg:flex-row">
 			<div class="drop-zone hidden" onclick="document.getElementById('fileInput').click()">
 				<i class="fas fa-cloud-upload-alt upload-icon text-white"></i>
@@ -17,7 +22,7 @@
 				<div class="file-info"></div>
 			</div>
 
-			<div class="text">
+			<div class="text lg:flex-1" >
 				<textarea type="text" id="textInput" placeholder="Wprowadź tekst..."></textarea>
 			</div>
 
@@ -80,5 +85,6 @@
 				</div>
 			</div>
 		</header>
+		<script type="module" src="/src/main.ts"></script>
 	</body>
 </html>

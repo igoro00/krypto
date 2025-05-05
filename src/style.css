@@ -44,8 +44,8 @@ header {
 }
 
 .drop-zone {
+    min-height: 600px;
     box-sizing: border-box;
-    height: 60vh;
     border: 2px solid var(--color-gray-600);
     border-radius: 10px;
     display: flex;
@@ -70,7 +70,6 @@ header {
 
 .drop-zone i {
     font-size: 48px;
-    /* color: #3c7cc6; */
     margin-bottom: 10px;
 }
 
@@ -89,9 +88,7 @@ header {
 }
 
 button {
-    /* background: #f8f9fa; */
     background: var(--color-gray-700);
-    /* color: black; */
     font-weight: 500;
     border: 2px solid var(--color-gray-600);
     padding: 13px;
@@ -116,8 +113,7 @@ main {
 }
 
 .text {
-    flex: 1;
-    box-sizing: border-box;
+    height: 600px;
 }
 
 p {
@@ -151,21 +147,45 @@ label {
     text-align: center;
 }
 
-.hidden {
-    display: none;
-}
-
 #textInput {
     padding: 10px;
     text-align: left;
-    /* background: #f8f9fa; */
     background: var(--color-gray-700);
-    /* color: white; */
     font-weight: 500;
     border: 2px solid var(--color-gray-600);
     width: 100%;
     border-radius: 10px;
     resize: none;
-    height: 60vh;
+    min-height: 600px;
     box-sizing: border-box;
+}
+
+.loading {
+    position: fixed;
+    flex-direction: column;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+#loadingImg {
+    width: 100px;
+    height: 100px;
+}
+
+#loadingText {
+    color: white;
+    font-size: 18px;
+    margin-top: 10px;
+    text-align: center;
+}
+
+.hidden {
+    display: none;
 }
