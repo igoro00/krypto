@@ -81,10 +81,7 @@ export function generateKeys(bits = 32): ElGamalKeys {
   return { p, g, x, y };
 }
 
-// SHA-256 hash, zwraca BigInt
-export async function hashMessage(msg: string): Promise<bigint> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(msg);
+export async function hashMessage(data: ArrayBuffer): Promise<bigint> {
   const hashBuffer = await crypto.subtle.digest("SHA-256", data);
   return BigInt(
     "0x" +
@@ -94,13 +91,12 @@ export async function hashMessage(msg: string): Promise<bigint> {
   );
 }
 
-// Asynchroniczne podpisywanie
 export async function sign(
-  msg: string,
+  data: ArrayBuffer,
   keys: ElGamalKeys
 ): Promise<ElGamalSignature> {
   const { p, g, x } = keys;
-  const h = await hashMessage(msg);
+  const h = await hashMessage(data);
   let k: bigint;
   do {
     k = 2n + BigInt(Math.floor(Math.random() * Number(p - 3n)));
@@ -111,16 +107,15 @@ export async function sign(
   return { r, s: (s + (p - 1n)) % (p - 1n) };
 }
 
-// Asynchroniczna weryfikacja
 export async function verify(
-  msg: string,
+  data: ArrayBuffer,
   sig: ElGamalSignature,
   keys: ElGamalKeys
 ): Promise<boolean> {
   const { p, g, y } = keys;
   const { r, s } = sig;
   if (r <= 0n || r >= p) return false;
-  const h = await hashMessage(msg);
+  const h = await hashMessage(data);
   const v1 = (modPow(y, r, p) * modPow(r, s, p)) % p;
   const v2 = modPow(g, h, p);
   return v1 === v2;
