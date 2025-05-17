@@ -4,6 +4,7 @@ export type ElGamalKeys = {
   x: bigint; // klucz prywatny (wykładnik)
   y: bigint; // klucz publiczny (y = (g^x)mod(p))
 };
+// klucz prywatny to x, a klucz publiczny to (p, g, y).
 
 // definicja typu dla podpisu cyfrowego
 export type ElGamalSignature = {
