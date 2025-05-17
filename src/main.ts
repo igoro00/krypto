@@ -33,7 +33,7 @@ const SIGNATURE_SEPARATOR = new Uint8Array([
 $("file").addEventListener("change", (e) => {
   const input = <HTMLInputElement>e.target; // rzutowanie na input typu file
   if (input.files && input.files[0]) {
-    // czy wybrano plik został wybrany
+    // czy plik został wybrany
     fileName = input.files[0].name;
     const reader = new FileReader();
     reader.onload = function (ev) {
@@ -50,15 +50,14 @@ $("file").addEventListener("change", (e) => {
 // podpisanie pliku
 $("sign").addEventListener("click", async () => {
   if (!fileContent) {
-    $("message").textContent = "Najpierw wybierz plik!";
+    $("message").textContent = "Wybierz plik!";
     $("message").className = "err";
     return;
   }
   try {
     // podpisanie pliku aktualnym kluczem prywatnym
     currentSignature = await sign(fileContent, currentKeys);
-    $("message").textContent =
-      "Plik został podpisany! Możesz go pobrać poniżej.";
+    $("message").textContent = "Plik został podpisany! Możesz go pobrać.";
     $("message").className = "ok";
     $("download-signedfile").style.display = "inline-block";
     $("download-publickey").style.display = "inline-block";
@@ -165,7 +164,7 @@ $("verify-publickey").addEventListener("change", (e) => {
 $("verify").addEventListener("click", async () => {
   try {
     if (!verifyFileContent || !verifyPublicKey) {
-      throw new Error("Brak pliku lub klucza publicznego!");
+      throw new Error("Brak pliku i/lub klucza publicznego!");
     }
 
     // zawartość pliku na tablicę bajtów
