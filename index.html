@@ -10,24 +10,33 @@
     <h1>Podpis cyfrowy ElGamala</h1>
     <div class="container">
       <h2>Podpisywanie pliku</h2>
-      <input type="file" id="file" />
-      <br />
-      <button id="sign">Podpisz plik</button>
-      <button id="download-signedfile" style="display: none">
-        Pobierz plik z podpisem
-      </button>
-      <button id="download-publickey" style="display: none">
-        Pobierz klucz publiczny
-      </button>
-      <div id="message"></div>
+      <div class="file-section">
+        <input type="file" id="file" />
+        <div class="button-group">
+          <button id="sign">Podpisz plik</button>
+          <button id="download-signedfile" style="display: none">
+            Pobierz plik z podpisem
+          </button>
+          <button id="download-publickey" style="display: none">
+            Pobierz klucz publiczny
+          </button>
+        </div>
+        <div id="message"></div>
+      </div>
 
       <h2>Weryfikacja podpisu</h2>
-      <label>Plik z danymi i podpisem:</label>
-      <input type="file" id="verify-signedfile" /><br />
-      <label>Plik z kluczem publicznym:</label>
-      <input type="file" id="verify-publickey" /><br />
-      <button id="verify">Weryfikuj podpis</button>
-      <div id="verify-result"></div>
+      <div class="verify-section">
+        <div class="input-group">
+          <label>Plik z danymi i podpisem:</label>
+          <input type="file" id="verify-signedfile" />
+        </div>
+        <div class="input-group">
+          <label>Plik z kluczem publicznym:</label>
+          <input type="file" id="verify-publickey" />
+        </div>
+        <button id="verify">Weryfikuj podpis</button>
+        <div id="verify-result"></div>
+      </div>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
