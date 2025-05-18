@@ -5,11 +5,12 @@ import {
   sign,
   verify,
   ElGamalKeys, // typ opisujący strukturę kluczy
-  ElGamalSignature, // typ opisujący strukturę podpisu
+  ElGamalSignature,
+  modPow, // typ opisujący strukturę podpisu
 } from "./elgamal";
 
 // aktualny zestaw kluczy
-let currentKeys: ElGamalKeys = generateKeys(32);
+let currentKeys: ElGamalKeys | null = null;
 
 // aktualny podpis (na początku brak podpisu)
 let currentSignature: ElGamalSignature | null = null;
@@ -29,7 +30,7 @@ const SIGNATURE_SEPARATOR = new Uint8Array([
   0xff, 0xfe, 0xfd, 0xfc, 0xfb, 0xfa, 0xf9, 0xf8,
 ]);
 
-// wybór pliku
+// wybór pliku do podpisania
 $("file").addEventListener("change", (e) => {
   const input = <HTMLInputElement>e.target; // rzutowanie na input typu file
   if (input.files && input.files[0]) {
@@ -47,9 +48,29 @@ $("file").addEventListener("change", (e) => {
   }
 });
 
+// wybór pliku z kluczem prywatnym
+$("privatekey-file").addEventListener("change", (e) => {
+  const input = <HTMLInputElement>e.target;
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = function (ev) {
+      const privatekey = ev.target?.result?.toString().trim().split("\n");
+      if (privatekey == null) {
+        return;
+      }
+      const [pHex, gHex, xHex] = privatekey;
+      const p = BigInt("0x" + pHex.trim());
+      const g = BigInt("0x" + gHex.trim());
+      const x = BigInt("0x" + xHex.trim());
+      currentKeys = { p, g, x, y: modPow(g, x, p) };
+    };
+    reader.readAsText(input.files[0]); // plik jako tekst
+  }
+});
+
 // podpisanie pliku
 $("sign").addEventListener("click", async () => {
-  if (!fileContent) {
+  if (!fileContent || !currentKeys) {
     $("message").textContent = "Wybierz plik!";
     $("message").className = "err";
     return;
@@ -60,7 +81,6 @@ $("sign").addEventListener("click", async () => {
     $("message").textContent = "Plik został podpisany! Możesz go pobrać.";
     $("message").className = "ok";
     $("download-signedfile").style.display = "inline-block";
-    $("download-publickey").style.display = "inline-block";
   } catch (error) {
     $("message").textContent = "Błąd podczas podpisywania!";
     $("message").className = "err";
@@ -114,6 +134,9 @@ $("download-signedfile").addEventListener("click", () => {
 // pobieranie klucza publicznego
 $("download-publickey").addEventListener("click", () => {
   // tekst z parametrami klucza publicznego (p, g, y) w systemie szesnastkowym, każda wartość w osobnej linii
+  if (currentKeys == null) {
+    return;
+  }
   const publicKeyText = [
     currentKeys.p.toString(16),
     currentKeys.g.toString(16),
@@ -125,6 +148,30 @@ $("download-publickey").addEventListener("click", () => {
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = "publickey.txt";
+  a.click();
+  URL.revokeObjectURL(a.href);
+
+  $("message").textContent = "Klucz publiczny został pobrany.";
+  $("message").className = "ok";
+});
+
+// pobieranie klucza prywatnego
+$("download-privatekey").addEventListener("click", () => {
+  if (currentKeys == null) {
+    return;
+  }
+  // tekst z parametrami klucza prywatnego (p, g, x) w systemie szesnastkowym, każda wartość w osobnej linii
+  const publicKeyText = [
+    currentKeys.p.toString(16),
+    currentKeys.g.toString(16),
+    currentKeys.x.toString(16),
+  ].join("\n");
+  // Blob z tekstem klucza
+  const blob = new Blob([publicKeyText], { type: "text/plain" });
+  //  tymczasowy link do pobrania
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "privatekey.txt";
   a.click();
   URL.revokeObjectURL(a.href);
 
@@ -217,5 +264,20 @@ $("verify").addEventListener("click", async () => {
     $("verify-result").textContent =
       err instanceof Error ? err.message : "Błąd pliku!";
     $("verify-result").className = "err";
+  }
+});
+
+// generowanie kluczy
+$("generate").addEventListener("click", async () => {
+  currentKeys = generateKeys(32);
+
+  try {
+    $("message2").textContent = "Klucze wygenerowane! Możesz je pobrać.";
+    $("message2").className = "ok";
+    $("download-privatekey").style.display = "inline-block";
+    $("download-publickey").style.display = "inline-block";
+  } catch (error) {
+    $("message2").textContent = "Błąd podczas podpisywania!";
+    $("message2").className = "err";
   }
 });

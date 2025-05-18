@@ -8,18 +8,29 @@
   </head>
   <body>
     <div class="container">
+      <h2>Generowanie klucza</h2>
+      <div class="button-group">
+        <button id="generate">Generuj</button>
+        <button id="download-privatekey" style="display: none">
+          Pobierz klucz prywatny
+        </button>
+        <button id="download-publickey" style="display: none">
+          Pobierz klucz publiczny
+        </button>
+        <div id="message2"></div>
+      </div>
+
       <h2>Podpisywanie pliku</h2>
       <div class="file-section">
-        <input type="file" id="file" />
-        <div class="button-group">
-          <button id="sign">Podpisz plik</button>
+        <div class="input-group verify-section">
+          <label>Plik do podpisania</label>
+          <input type="file" id="file" />
           <button id="download-signedfile" style="display: none">
             Pobierz plik z podpisem
           </button>
-          <button id="download-publickey" style="display: none">
-            Pobierz klucz publiczny
-          </button>
-        </div>
+          <label>Klucz prywatny z pliku</label>
+          <input type="file" id="privatekey-file" />
+          <button id="sign">Podpisz plik</button>
         <div id="message"></div>
       </div>
 
