@@ -21,34 +21,54 @@ export function modPow(base: bigint, exp: bigint, mod: bigint): bigint {
   while (exp > 0) {
     // jeśli bit wykładnika wynosi 1 (czyli, gdy nieparzysta), mnożymy wynik przez podstawę
     if (exp % 2n === 1n) result = (result * base) % mod;
-    // przesuwamy się do następnego bitu wykładnika
+    // przesuwamy się do następnego bitu wykładnika, zaokrąlenie w dół
     exp = exp / 2n;
     // podnosimy podstawę do kwadratu
     base = (base * base) % mod;
   }
+  // wynik końcowy: (base^exp) % mod
   return result;
 }
 
 // rozszerzony algorytm euklidesa - znajduje NWD i współczynniki bezouta
 // czyli liczby x, y takie, że ax + by = NWD(a,b)
-
 function egcd(a: bigint, b: bigint): [bigint, bigint, bigint] {
+  // jeśli a == 0, to NWD(a, b) = b
+  // równanie staje się: 0*x + b*y = b
+  // rozwiązanie: x = 0, y = 1
   if (a === 0n) return [b, 0n, 1n]; // przypadek bazowy
+  // Jeśli a = 0, to równanie staje się: 0 * x + by = NWD(0, b)
+
+  // wywołujemy egcd(b % a, a), czyli szukamy NWD i współczynników dla (b mod a, a)
   // rekurencyjne wywołanie dla mniejszych liczb
   const [g, y, x] = egcd(b % a, a);
   // obliczenie współczynników dla aktualnego kroku
+  // przekształcenie współczynników Bezouta:
+  // z rekurencji mamy: (b % a)*y + a*x = g
+  // podstawiamy b % a = b - (b // a) * a
+  // otrzymujemy: (b - (b // a)*a)*y + a*x = g
+  // po przekształceniu: b*y + a*(x - (b // a)*y) = g
+  // czyli: x' = x - (b // a)*y, y' = y
+  // zwracamy: (g, x', y')
   return [g, x - (b / a) * y, y];
 }
 
 // funkcja znajdująca odwrotność modularną (a^(-1) mod m)
 // czyli liczbę b taką, że ab ≡ 1 mod(m)
 function modInv(a: bigint, m: bigint): bigint {
+  // g to NWD(a, m)
+  // x, y to współczynniki Bezouta: a*x + m*y = g
+  // bierzemy tylko g i x (bo tylko te nas interesują)
   const [g, x] = egcd(a, m); // znajdujemy NWD i współczynniki
   // jeśli NWD != 1, odwrotność nie istnieje
+  // sprawdzenie istnienia odwrotności
+  // odwrotność modularna istnieje TYLKO gdy a i m są względnie pierwsze
+  // czyli ich NWD musi być równy 1
+  // jeśli g != 1, rzucamy wyjątek
   if (g !== 1n) throw new Error("Brak odwrotności modulo");
   // normalizacja wyniku do przedziału [0, m)
-  return ((x % m) + m) % m;
   // wynik normalizujemy do zakresu [0, m-1] (bo x może być ujemne)
+  return ((x % m) + m) % m;
 }
 
 // test pierwszości millera-rabina
